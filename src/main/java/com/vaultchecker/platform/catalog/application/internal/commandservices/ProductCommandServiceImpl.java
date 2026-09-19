@@ -10,9 +10,6 @@ import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 import org.springframework.stereotype.Service;
 
-/**
- * Product command service implementation.
- */
 @Service
 public class ProductCommandServiceImpl implements ProductCommandService {
 
@@ -28,7 +25,8 @@ public class ProductCommandServiceImpl implements ProductCommandService {
             return Result.failure(ApplicationError.validationError("name", "Product name is required"));
         }
         var product = new Product(command.productId(), command.storeId(), command.name(), command.category(),
-                command.unit(), command.price(), command.stock());
+                command.brand(), command.unit(), command.cashPrice(), command.listPrice(), command.paymentMode(),
+                command.imageUrl());
         return Result.success(productRepository.save(product));
     }
 
@@ -43,9 +41,12 @@ public class ProductCommandServiceImpl implements ProductCommandService {
         product.setStoreId(command.storeId());
         product.setName(command.name());
         product.setCategory(command.category());
+        product.setBrand(command.brand());
         product.setUnit(command.unit());
-        product.setPrice(command.price());
-        product.setStock(command.stock());
+        product.setCashPrice(command.cashPrice());
+        product.setListPrice(command.listPrice());
+        product.setPaymentMode(command.paymentMode());
+        product.setImageUrl(command.imageUrl());
         if (command.state() != null && !command.state().isBlank()) {
             product.setState(command.state());
         }

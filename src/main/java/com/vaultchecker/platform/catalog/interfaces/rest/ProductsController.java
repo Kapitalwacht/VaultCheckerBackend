@@ -25,7 +25,7 @@ import java.util.List;
 
 /**
  * REST controller exposing catalog product resources. Products can be filtered by store to keep
- * tenants isolated (US-03).
+ * tenants isolated.
  */
 @RestController
 @RequestMapping(value = "/api/v1/products", produces = MediaType.APPLICATION_JSON_VALUE)

@@ -3,9 +3,6 @@ package com.vaultchecker.platform.catalog.infrastructure.persistence.jpa.assembl
 import com.vaultchecker.platform.catalog.domain.model.aggregates.Product;
 import com.vaultchecker.platform.catalog.infrastructure.persistence.jpa.entities.ProductPersistenceEntity;
 
-/**
- * Static assembler between product domain and persistence representations.
- */
 public final class ProductPersistenceAssembler {
 
     private ProductPersistenceAssembler() {
@@ -19,9 +16,12 @@ public final class ProductPersistenceAssembler {
         product.setStoreId(entity.getStoreId());
         product.setName(entity.getName());
         product.setCategory(entity.getCategory());
+        product.setBrand(entity.getBrand());
         product.setUnit(entity.getUnit());
-        product.setPrice(entity.getPrice());
-        product.setStock(entity.getStock());
+        product.setCashPrice(entity.getCashPrice());
+        product.setListPrice(entity.getListPrice());
+        product.setPaymentMode(entity.getPaymentMode());
+        product.setImageUrl(entity.getImageUrl());
         product.setState(entity.getState());
         return product;
     }
@@ -36,9 +36,12 @@ public final class ProductPersistenceAssembler {
         entity.setStoreId(product.getStoreId());
         entity.setName(product.getName());
         entity.setCategory(product.getCategory());
+        entity.setBrand(product.getBrand());
         entity.setUnit(product.getUnit());
-        entity.setPrice(product.getPrice());
-        entity.setStock(product.getStock());
+        entity.setCashPrice(product.getCashPrice());
+        entity.setListPrice(product.getListPrice());
+        entity.setPaymentMode(product.getPaymentMode());
+        entity.setImageUrl(product.getImageUrl());
         entity.setState(product.getState());
         return entity;
     }

@@ -10,9 +10,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * JPA persistence entity for products.
- */
 @Entity
 @Table(name = "products")
 @Getter
@@ -32,14 +29,23 @@ public class ProductPersistenceEntity extends AuditableAbstractPersistenceEntity
     @Column(name = "category", length = 80)
     private String category;
 
+    @Column(name = "brand", length = 80)
+    private String brand;
+
     @Column(name = "unit", length = 30)
     private String unit;
 
-    @Column(name = "price", precision = 15, scale = 2)
-    private BigDecimal price;
+    @Column(name = "cash_price", precision = 15, scale = 2)
+    private BigDecimal cashPrice;
 
-    @Column(name = "stock")
-    private Integer stock;
+    @Column(name = "list_price", precision = 15, scale = 2)
+    private BigDecimal listPrice;
+
+    @Column(name = "payment_mode", length = 20)
+    private String paymentMode;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
     @Column(name = "state", nullable = false, length = 20)
     private String state;

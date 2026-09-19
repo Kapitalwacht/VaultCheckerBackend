@@ -5,16 +5,16 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-/**
- * Resource received to register a new product.
- */
 public record CreateProductResource(
         @Size(max = 60) String productId,
         @Size(max = 60) String storeId,
         @NotBlank @Size(max = 150) String name,
         @Size(max = 80) String category,
+        @Size(max = 80) String brand,
         @Size(max = 30) String unit,
-        BigDecimal price,
-        Integer stock
+        BigDecimal cashPrice,
+        BigDecimal listPrice,
+        @Size(max = 20) String paymentMode,
+        @Size(max = 500) String imageUrl
 ) {
 }
