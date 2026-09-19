@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller exposing payment registration. Applies the payment prelación (US-19).
+ * REST controller exposing payment registration. Applies the payment prelación.
  */
 @RestController
 @RequestMapping(value = "/api/v1/payments", produces = MediaType.APPLICATION_JSON_VALUE)

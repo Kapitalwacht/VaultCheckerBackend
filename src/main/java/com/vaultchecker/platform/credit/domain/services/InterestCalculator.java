@@ -63,7 +63,7 @@ public final class InterestCalculator {
 
     /**
      * Compensatory interest accrued over {@code days} on {@code principal} at the given effective
-     * annual rate (US-16). Base 360.
+     * annual rate. Base 360.
      *
      * @return the interest amount rounded to {@link FinanceConstants#MONEY_SCALE}
      */
@@ -74,7 +74,7 @@ public final class InterestCalculator {
 
     /**
      * Moratory (late) interest for {@code daysLate} days on {@code overdueAmount} at the pactada
-     * moratory effective annual rate (US-18). Base 360.
+     * moratory effective annual rate. Base 360.
      */
     public static BigDecimal moratoryInterest(BigDecimal overdueAmount, BigDecimal moratoryEffectiveAnnualRate, int daysLate) {
         if (daysLate <= 0) {
@@ -85,8 +85,8 @@ public final class InterestCalculator {
     }
 
     /**
-     * Capitalises {@code principal} over the {@code graceDays} dead days before the first installment
-     * (US-17): {@code principal * (1 + i)^(graceDays/360)}. When there are no grace days the principal
+     * Capitalises {@code principal} over the {@code graceDays} dead days before the first installment:
+     * {@code principal * (1 + i)^(graceDays/360)}. When there are no grace days the principal
      * is returned unchanged.
      */
     public static BigDecimal capitalizeForGrace(BigDecimal principal, BigDecimal effectiveAnnualRate, int graceDays) {

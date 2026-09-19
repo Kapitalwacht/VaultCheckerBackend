@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 
 /**
- * Payment command service implementation. Applies the payment prelación (US-19): the amount is imputed
+ * Payment command service implementation. Applies the payment prelación: the amount is imputed
  * to moratory interest, then compensatory interest, then principal; the credit account balance is then
  * reduced by the principal portion.
  */

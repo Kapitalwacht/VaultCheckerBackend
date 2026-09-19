@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Resource representing a registered payment, including the prelación breakdown (US-19).
+ * Resource representing a registered payment, including the prelación breakdown.
  */
 public record PaymentResource(Long id, Long creditAccountId, String storeId, BigDecimal amount, LocalDate date,
                               BigDecimal appliedToLateInterest, BigDecimal appliedToCompensatoryInterest,

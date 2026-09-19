@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 /**
  * Resource received to register a payment against a credit account.
- * {@code lateInterestDue} and {@code compensatoryInterestDue} feed the payment prelación (US-19).
+ * {@code lateInterestDue} and {@code compensatoryInterestDue} feed the payment prelación.
  */
 public record RegisterPaymentResource(
         @NotNull Long creditAccountId,

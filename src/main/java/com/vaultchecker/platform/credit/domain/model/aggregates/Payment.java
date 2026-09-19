@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 /**
  * Payment aggregate root. Records a payment made against a credit account, keeping the prelación
- * breakdown (US-19): how much went to moratory interest, compensatory interest and principal.
+ * breakdown: how much went to moratory interest, compensatory interest and principal.
  */
 @Getter
 public class Payment extends AbstractDomainAggregateRoot<Payment> {

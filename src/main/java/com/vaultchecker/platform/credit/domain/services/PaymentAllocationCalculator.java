@@ -5,7 +5,7 @@ import com.vaultchecker.platform.credit.domain.model.valueobjects.PaymentAllocat
 import java.math.BigDecimal;
 
 /**
- * Applies the payment prelación (US-19): an incoming payment is imputed in strict order to
+ * Applies the payment prelación: an incoming payment is imputed in strict order to
  * (1) moratory/late interest, (2) compensatory interest, and finally (3) principal (capital).
  */
 public final class PaymentAllocationCalculator {

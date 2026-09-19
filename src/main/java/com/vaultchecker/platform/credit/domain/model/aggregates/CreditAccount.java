@@ -10,7 +10,7 @@ import java.time.LocalDate;
 /**
  * Credit account aggregate root. Represents a customer's running account (cuenta corriente) at a
  * store: the outstanding {@code balance}, the {@code creditLimit} and the {@code dueDate}. Scoped to a
- * store ({@code storeId}) for tenant isolation (US-03).
+ * store ({@code storeId}) for tenant isolation.
  */
 @Getter
 public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
@@ -58,7 +58,7 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
         return available.signum() < 0 ? BigDecimal.ZERO : available;
     }
 
-    /** Whether a charge of {@code amount} would exceed the credit limit (US-14). */
+    /** Whether a charge of {@code amount} would exceed the credit limit. */
     public boolean wouldExceedLimit(BigDecimal amount) {
         return balance.add(amount).compareTo(creditLimit) > 0;
     }

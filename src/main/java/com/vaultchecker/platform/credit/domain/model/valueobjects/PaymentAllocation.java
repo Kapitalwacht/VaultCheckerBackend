@@ -3,7 +3,7 @@ package com.vaultchecker.platform.credit.domain.model.valueobjects;
 import java.math.BigDecimal;
 
 /**
- * Result of applying the payment prelación (US-19): a payment is imputed first to late/moratory
+ * Result of applying the payment prelación: a payment is imputed first to late/moratory
  * interest, then to compensatory interest, then to principal (capital).
  *
  * @param toLateInterest         amount applied to moratory (late) interest

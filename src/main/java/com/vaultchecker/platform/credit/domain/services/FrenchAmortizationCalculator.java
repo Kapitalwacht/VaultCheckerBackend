@@ -11,7 +11,7 @@ import static com.vaultchecker.platform.credit.domain.services.FinanceConstants.
 
 /**
  * Builds a payment schedule using the <b>French method (vencido)</b> with equal installments, as
- * required for the installment ("meses") modality (US-17). Commercial months of 30 days are used and
+ * required for the installment ("meses") modality. Commercial months of 30 days are used and
  * the principal is capitalised for the grace period before the installment is computed.
  *
  * <p>Fixed installment: {@code A = P * r / (1 - (1 + r)^-n)} where {@code r} is the effective monthly
@@ -31,7 +31,7 @@ public final class FrenchAmortizationCalculator {
      * @param principal          the purchase amount financed
      * @param effectiveAnnualRate the customer's effective annual rate
      * @param months             number of monthly installments (must be >= 1)
-     * @param graceDays          dead days between the purchase and the first installment (US-17)
+     * @param graceDays          dead days between the purchase and the first installment
      * @return the fixed installment rounded to 2 decimals
      */
     public static BigDecimal fixedInstallment(BigDecimal principal, BigDecimal effectiveAnnualRate,
