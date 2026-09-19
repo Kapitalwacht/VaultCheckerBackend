@@ -8,5 +8,6 @@ package com.vaultchecker.platform.iam.domain.model.commands;
  * @param roleName the role name to assign (e.g. {@code ROLE_STORE_ADMIN}); when {@code null}
  *                 or blank the application service assigns the default {@code ROLE_CUSTOMER}
  */
-public record SignUpCommand(String email, String password, String roleName) {
+public record SignUpCommand(String email, String password, String roleName,
+                            String name, String phone, String storeId) {
 }

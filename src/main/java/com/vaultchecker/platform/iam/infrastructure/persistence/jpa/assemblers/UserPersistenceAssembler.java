@@ -20,6 +20,16 @@ public final class UserPersistenceAssembler {
         domain.setId(entity.getId());
         domain.setEmail(entity.getEmail());
         domain.setPassword(entity.getPassword());
+        domain.setName(entity.getName());
+        domain.setPhone(entity.getPhone());
+        domain.setStoreId(entity.getStoreId());
+        domain.setCustomerId(entity.getCustomerId());
+        domain.setEmailVerified(entity.isEmailVerified());
+        domain.setVerificationToken(entity.getVerificationToken());
+        domain.setRecoveryCode(entity.getRecoveryCode());
+        domain.setRecoveryExpiresAt(entity.getRecoveryExpiresAt());
+        domain.setLoginCode(entity.getLoginCode());
+        domain.setLoginCodeExpiresAt(entity.getLoginCodeExpiresAt());
         domain.setRoles(entity.getRoles().stream()
                 .map(RolePersistenceAssembler::toDomainFromPersistence)
                 .collect(Collectors.toSet()));
@@ -35,6 +45,16 @@ public final class UserPersistenceAssembler {
         }
         entity.setEmail(user.getEmail());
         entity.setPassword(user.getPassword());
+        entity.setName(user.getName());
+        entity.setPhone(user.getPhone());
+        entity.setStoreId(user.getStoreId());
+        entity.setCustomerId(user.getCustomerId());
+        entity.setEmailVerified(user.isEmailVerified());
+        entity.setVerificationToken(user.getVerificationToken());
+        entity.setRecoveryCode(user.getRecoveryCode());
+        entity.setRecoveryExpiresAt(user.getRecoveryExpiresAt());
+        entity.setLoginCode(user.getLoginCode());
+        entity.setLoginCodeExpiresAt(user.getLoginCodeExpiresAt());
         entity.setRoles(user.getRoles() == null
                 ? new HashSet<>()
                 : user.getRoles().stream()

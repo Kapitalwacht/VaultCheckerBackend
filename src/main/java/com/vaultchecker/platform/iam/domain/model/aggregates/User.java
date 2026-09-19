@@ -22,6 +22,26 @@ public class User extends AbstractDomainAggregateRoot<User> {
     @Setter
     private String password;
     @Setter
+    private String name;
+    @Setter
+    private String phone;
+    @Setter
+    private String storeId;
+    @Setter
+    private String customerId;
+    @Setter
+    private boolean emailVerified;
+    @Setter
+    private String verificationToken;
+    @Setter
+    private String recoveryCode;
+    @Setter
+    private Long recoveryExpiresAt;
+    @Setter
+    private String loginCode;
+    @Setter
+    private Long loginCodeExpiresAt;
+    @Setter
     private Set<Role> roles;
 
     public User() {

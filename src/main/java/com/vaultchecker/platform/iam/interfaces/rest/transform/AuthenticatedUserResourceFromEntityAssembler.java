@@ -13,6 +13,7 @@ public class AuthenticatedUserResourceFromEntityAssembler {
                 .map(Role::getStringName)
                 .findFirst()
                 .orElse(null);
-        return new AuthenticatedUserResource(user.getId(), user.getId(), user.getEmail(), role, token);
+        return new AuthenticatedUserResource(user.getId(), user.getId(), user.getEmail(), role,
+                user.getName(), user.getPhone(), user.getStoreId(), user.getCustomerId(), token);
     }
 }

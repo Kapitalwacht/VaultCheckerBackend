@@ -10,6 +10,7 @@ import com.vaultchecker.platform.iam.interfaces.rest.resources.UserResource;
 public class UserResourceFromEntityAssembler {
     public static UserResource toResourceFromEntity(User user) {
         var roles = user.getRoles().stream().map(Role::getStringName).toList();
-        return new UserResource(user.getId(), user.getEmail(), roles);
+        return new UserResource(user.getId(), user.getEmail(), user.getName(),
+                user.getPhone(), user.getStoreId(), user.isEmailVerified(), roles);
     }
 }

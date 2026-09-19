@@ -21,6 +21,15 @@ public record SignUpResource(
 
         @Schema(description = "Role to assign", example = "ROLE_STORE_ADMIN",
                 allowableValues = {"ROLE_SYSTEM_ADMIN", "ROLE_STORE_ADMIN", "ROLE_CUSTOMER"}, nullable = true)
-        String role
+        String role,
+
+        @Schema(description = "Display name of the account owner", example = "Don Pepe", nullable = true)
+        String name,
+
+        @Schema(description = "Contact phone", example = "+51 987654321", nullable = true)
+        String phone,
+
+        @Schema(description = "Store code the user belongs to", example = "ST-001", nullable = true)
+        String storeId
 ) {
 }

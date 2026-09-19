@@ -70,6 +70,10 @@ public class UserCommandServiceImpl implements UserCommandService {
                 .orElseGet(() -> roleRepository.save(new Role(roleName)));
 
         var user = new User(command.email(), hashingService.encode(command.password()), List.of(role));
+        user.setName(command.name());
+        user.setPhone(command.phone());
+        user.setStoreId(command.storeId());
+        user.setEmailVerified(false);
         userRepository.save(user);
         return userRepository.findByEmail(command.email())
                 .<Result<User, ApplicationError>>map(savedUser -> {
