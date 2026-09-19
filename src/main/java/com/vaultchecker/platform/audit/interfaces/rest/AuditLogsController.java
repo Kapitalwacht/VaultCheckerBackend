@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * REST controller exposing audit log resources for traceability (US-05, US-21).
+ * REST controller exposing audit log resources for traceability.
  */
 @RestController
 @RequestMapping(value = "/api/v1/audit-logs", produces = MediaType.APPLICATION_JSON_VALUE)

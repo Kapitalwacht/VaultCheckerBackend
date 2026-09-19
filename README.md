@@ -40,11 +40,11 @@ on demand the first time they are assigned (no startup seeding).
 The course core. All calculations honour the mandatory conventions in `FinanceConstants`
 (360-day base, 30-day commercial month, amounts to 2 decimals, rates to ≥7 decimals):
 
-- `InterestCalculator` — nominal↔effective conversion, compensatory interest by days (US-16),
-  moratory interest (US-18) and grace-period capitalisation (US-17).
+- `InterestCalculator` — nominal↔effective conversion, compensatory interest by days,
+  moratory interest and grace-period capitalisation.
 - `FrenchAmortizationCalculator` — equal-installment French method (vencido) schedule with grace
-  capitalisation (US-17).
-- `PaymentAllocationCalculator` — payment prelación: moratory → compensatory → principal (US-19).
+  capitalisation.
+- `PaymentAllocationCalculator` — payment prelación: moratory → compensatory → principal.
 
 ## Configuration — two environments
 

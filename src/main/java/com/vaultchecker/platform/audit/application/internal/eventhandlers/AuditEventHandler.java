@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * Listens for domain/integration events across the platform and persists an audit log, providing
- * traceability without coupling the emitting contexts to the audit persistence model (US-05).
+ * traceability without coupling the emitting contexts to the audit persistence model.
  */
 @Service
 public class AuditEventHandler {

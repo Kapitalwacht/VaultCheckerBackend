@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 /**
- * Audit log aggregate root. Records a relevant operation for traceability (US-05).
+ * Audit log aggregate root. Records a relevant operation for traceability.
  * Field names ({@code auditId}, {@code userRole}, {@code action}, {@code date}, {@code time},
  * {@code details}) match the VaultChecker frontend.
  */

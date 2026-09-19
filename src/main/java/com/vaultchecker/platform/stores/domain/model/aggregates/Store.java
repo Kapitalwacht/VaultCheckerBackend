@@ -6,8 +6,8 @@ import lombok.Setter;
 
 /**
  * Store aggregate root. Represents a neighbourhood business (bodega, butcher, bakery, ...) that
- * operates on the platform. Deactivation is logical (US-02) so history is preserved; every product,
- * customer and credit account is scoped to a store to keep tenants isolated (US-03).
+ * operates on the platform. Deactivation is logical so history is preserved; every product,
+ * customer and credit account is scoped to a store to keep tenants isolated.
  */
 @Getter
 public class Store extends AbstractDomainAggregateRoot<Store> {
