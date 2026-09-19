@@ -8,7 +8,7 @@ import java.math.MathContext;
 import static com.vaultchecker.platform.credit.domain.services.FinanceConstants.*;
 
 /**
- * Pure domain calculator for the interest concepts in the project brief (Épica 6). All results honour
+ * Pure domain calculator for the interest concepts in the project brief (the finance brief). All results honour
  * the mandatory conventions in {@link FinanceConstants}: 360-day base, 30-day month, amounts rounded
  * to 2 decimals and rates carried with at least 7 decimals.
  *
