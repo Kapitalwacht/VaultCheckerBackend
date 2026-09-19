@@ -10,9 +10,6 @@ import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 import org.springframework.stereotype.Service;
 
-/**
- * Customer command service implementation.
- */
 @Service
 public class CustomerCommandServiceImpl implements CustomerCommandService {
 
@@ -29,6 +26,9 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
         }
         var customer = new Customer(command.customerId(), command.storeId(), command.firstName(), command.lastName(),
                 command.dni(), command.phone(), command.address(), command.creditLimit());
+        applyTerms(customer, command.currency(), command.rateType(), command.rateValue(),
+                command.rateCapitalizationDays(), command.ratePeriodDays(), command.moratoriumRateType(),
+                command.moratoriumRateValue(), command.maxMonths(), command.cutoffDay(), command.paymentDay());
         return Result.success(customerRepository.save(customer));
     }
 
@@ -47,6 +47,9 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
         customer.setPhone(command.phone());
         customer.setAddress(command.address());
         customer.setCreditLimit(command.creditLimit());
+        applyTerms(customer, command.currency(), command.rateType(), command.rateValue(),
+                command.rateCapitalizationDays(), command.ratePeriodDays(), command.moratoriumRateType(),
+                command.moratoriumRateValue(), command.maxMonths(), command.cutoffDay(), command.paymentDay());
         if (command.state() != null && !command.state().isBlank()) {
             customer.setState(command.state());
         }
@@ -60,5 +63,21 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
         }
         customerRepository.deleteById(command.id());
         return Result.success(true);
+    }
+
+    private void applyTerms(Customer customer, String currency, String rateType, java.math.BigDecimal rateValue,
+                            Integer rateCapitalizationDays, Integer ratePeriodDays, String moratoriumRateType,
+                            java.math.BigDecimal moratoriumRateValue, Integer maxMonths, Integer cutoffDay,
+                            Integer paymentDay) {
+        if (currency != null) customer.setCurrency(currency);
+        if (rateType != null) customer.setRateType(rateType);
+        if (rateValue != null) customer.setRateValue(rateValue);
+        if (rateCapitalizationDays != null) customer.setRateCapitalizationDays(rateCapitalizationDays);
+        if (ratePeriodDays != null) customer.setRatePeriodDays(ratePeriodDays);
+        if (moratoriumRateType != null) customer.setMoratoriumRateType(moratoriumRateType);
+        if (moratoriumRateValue != null) customer.setMoratoriumRateValue(moratoriumRateValue);
+        if (maxMonths != null) customer.setMaxMonths(maxMonths);
+        if (cutoffDay != null) customer.setCutoffDay(cutoffDay);
+        if (paymentDay != null) customer.setPaymentDay(paymentDay);
     }
 }

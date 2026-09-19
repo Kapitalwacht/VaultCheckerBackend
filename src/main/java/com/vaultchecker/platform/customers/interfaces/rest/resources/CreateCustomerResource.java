@@ -16,6 +16,16 @@ public record CreateCustomerResource(
         @Size(max = 20) String dni,
         @Size(max = 30) String phone,
         @Size(max = 200) String address,
-        BigDecimal creditLimit
+        BigDecimal creditLimit,
+        @Size(max = 10) String currency,
+        @Size(max = 20) String rateType,
+        BigDecimal rateValue,
+        Integer rateCapitalizationDays,
+        Integer ratePeriodDays,
+        @Size(max = 20) String moratoriumRateType,
+        BigDecimal moratoriumRateValue,
+        Integer maxMonths,
+        Integer cutoffDay,
+        Integer paymentDay
 ) {
 }

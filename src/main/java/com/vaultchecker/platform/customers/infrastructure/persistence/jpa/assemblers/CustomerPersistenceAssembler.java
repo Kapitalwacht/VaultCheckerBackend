@@ -3,9 +3,6 @@ package com.vaultchecker.platform.customers.infrastructure.persistence.jpa.assem
 import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.infrastructure.persistence.jpa.entities.CustomerPersistenceEntity;
 
-/**
- * Static assembler between customer domain and persistence representations.
- */
 public final class CustomerPersistenceAssembler {
 
     private CustomerPersistenceAssembler() {
@@ -23,6 +20,16 @@ public final class CustomerPersistenceAssembler {
         customer.setPhone(entity.getPhone());
         customer.setAddress(entity.getAddress());
         customer.setCreditLimit(entity.getCreditLimit());
+        customer.setCurrency(entity.getCurrency());
+        customer.setRateType(entity.getRateType());
+        customer.setRateValue(entity.getRateValue());
+        customer.setRateCapitalizationDays(entity.getRateCapitalizationDays());
+        customer.setRatePeriodDays(entity.getRatePeriodDays());
+        customer.setMoratoriumRateType(entity.getMoratoriumRateType());
+        customer.setMoratoriumRateValue(entity.getMoratoriumRateValue());
+        customer.setMaxMonths(entity.getMaxMonths());
+        customer.setCutoffDay(entity.getCutoffDay());
+        customer.setPaymentDay(entity.getPaymentDay());
         customer.setState(entity.getState());
         return customer;
     }
@@ -41,6 +48,16 @@ public final class CustomerPersistenceAssembler {
         entity.setPhone(customer.getPhone());
         entity.setAddress(customer.getAddress());
         entity.setCreditLimit(customer.getCreditLimit());
+        entity.setCurrency(customer.getCurrency());
+        entity.setRateType(customer.getRateType());
+        entity.setRateValue(customer.getRateValue());
+        entity.setRateCapitalizationDays(customer.getRateCapitalizationDays());
+        entity.setRatePeriodDays(customer.getRatePeriodDays());
+        entity.setMoratoriumRateType(customer.getMoratoriumRateType());
+        entity.setMoratoriumRateValue(customer.getMoratoriumRateValue());
+        entity.setMaxMonths(customer.getMaxMonths());
+        entity.setCutoffDay(customer.getCutoffDay());
+        entity.setPaymentDay(customer.getPaymentDay());
         entity.setState(customer.getState());
         return entity;
     }

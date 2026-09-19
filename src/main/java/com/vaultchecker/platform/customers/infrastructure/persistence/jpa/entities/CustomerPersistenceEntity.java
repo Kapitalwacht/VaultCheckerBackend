@@ -10,9 +10,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * JPA persistence entity for customers.
- */
 @Entity
 @Table(name = "customers")
 @Getter
@@ -43,6 +40,36 @@ public class CustomerPersistenceEntity extends AuditableAbstractPersistenceEntit
 
     @Column(name = "credit_limit", precision = 15, scale = 2)
     private BigDecimal creditLimit;
+
+    @Column(name = "currency", length = 10)
+    private String currency;
+
+    @Column(name = "rate_type", length = 20)
+    private String rateType;
+
+    @Column(name = "rate_value", precision = 12, scale = 9)
+    private BigDecimal rateValue;
+
+    @Column(name = "rate_capitalization_days")
+    private Integer rateCapitalizationDays;
+
+    @Column(name = "rate_period_days")
+    private Integer ratePeriodDays;
+
+    @Column(name = "moratorium_rate_type", length = 20)
+    private String moratoriumRateType;
+
+    @Column(name = "moratorium_rate_value", precision = 12, scale = 9)
+    private BigDecimal moratoriumRateValue;
+
+    @Column(name = "max_months")
+    private Integer maxMonths;
+
+    @Column(name = "cutoff_day")
+    private Integer cutoffDay;
+
+    @Column(name = "payment_day")
+    private Integer paymentDay;
 
     @Column(name = "state", nullable = false, length = 20)
     private String state;
