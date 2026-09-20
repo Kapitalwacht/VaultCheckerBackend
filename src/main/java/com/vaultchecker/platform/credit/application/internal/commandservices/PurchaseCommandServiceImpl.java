@@ -6,10 +6,10 @@ import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayme
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
 import com.vaultchecker.platform.credit.domain.model.commands.RegisterPurchaseCommand;
 import com.vaultchecker.platform.credit.domain.model.valueobjects.AmortizationInstallment;
-import com.vaultchecker.platform.credit.domain.model.valueobjects.RateType;
 import com.vaultchecker.platform.credit.domain.repositories.CreditAccountRepository;
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
+import com.vaultchecker.platform.credit.domain.services.CreditCycle;
 import com.vaultchecker.platform.credit.domain.services.FrenchAmortizationCalculator;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
 import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 /**
  * Purchase command service. Beyond persisting the purchase it wires the financial engine into the flow:
@@ -33,6 +32,9 @@ import java.time.temporal.ChronoUnit;
  */
 @Service
 public class PurchaseCommandServiceImpl implements PurchaseCommandService {
+
+    private static final int DEFAULT_CUTOFF_DAY = 25;
+    private static final int DEFAULT_PAYMENT_DAY = 5;
 
     private final PurchaseRepository purchaseRepository;
     private final CreditAccountRepository creditAccountRepository;
@@ -91,12 +93,15 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
      */
     private void generateInstallmentSchedule(RegisterPurchaseCommand command, CreditAccount account, int months) {
         var customer = findCustomer(command.customerId());
-        var effectiveAnnualRate = effectiveAnnualRateOf(customer);
-        var purchaseDate = command.purchaseDate() != null ? command.purchaseDate() : LocalDate.now();
+        var effectiveAnnualRate = customer == null ? BigDecimal.ZERO : CreditCycle.effectiveAnnualRate(
+                customer.getRateType(), customer.getRateValue(),
+                customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
+        int cutoffDay = customer != null && customer.getCutoffDay() != null ? customer.getCutoffDay() : DEFAULT_CUTOFF_DAY;
+        int paymentDay = customer != null && customer.getPaymentDay() != null ? customer.getPaymentDay() : DEFAULT_PAYMENT_DAY;
 
-        // End of the grace period (first payment-day on/after the purchase, respecting the cutoff cycle).
-        var graceEnd = graceEndDate(purchaseDate, customer);
-        int graceDays = (int) Math.max(0, ChronoUnit.DAYS.between(purchaseDate, graceEnd));
+        var purchaseDate = command.purchaseDate() != null ? command.purchaseDate() : LocalDate.now();
+        var graceEnd = CreditCycle.graceEndDate(purchaseDate, cutoffDay, paymentDay);
+        int graceDays = CreditCycle.graceDays(purchaseDate, cutoffDay, paymentDay);
 
         for (AmortizationInstallment row : FrenchAmortizationCalculator.schedule(
                 command.amount(), effectiveAnnualRate, months, graceDays)) {
@@ -127,34 +132,5 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         return customerRepository.findAll().stream()
                 .filter(c -> customerId.equals(c.getCustomerId()))
                 .findFirst().orElse(null);
-    }
-
-    /** Resolves the customer's effective annual rate from their pactada nominal/effective rate. */
-    private BigDecimal effectiveAnnualRateOf(Customer customer) {
-        if (customer == null || customer.getRateValue() == null) {
-            return BigDecimal.ZERO;
-        }
-        var type = "nominal".equalsIgnoreCase(customer.getRateType()) ? RateType.NOMINAL : RateType.EFFECTIVE;
-        int periodDays = customer.getRatePeriodDays() != null ? customer.getRatePeriodDays() : 360;
-        int capDays = customer.getRateCapitalizationDays() != null && customer.getRateCapitalizationDays() > 0
-                ? customer.getRateCapitalizationDays() : 30;
-        int compoundingsPerYear = Math.max(1, periodDays / capDays);
-        return InterestCalculator.toEffectiveAnnual(customer.getRateValue(), type, compoundingsPerYear);
-    }
-
-    /** First payment-day on/after the purchase date, respecting the cutoff cycle (grace-period end). */
-    private LocalDate graceEndDate(LocalDate purchaseDate, Customer customer) {
-        int cutoffDay = customer != null && customer.getCutoffDay() != null ? customer.getCutoffDay() : 25;
-        int paymentDay = customer != null && customer.getPaymentDay() != null ? customer.getPaymentDay() : 5;
-        var base = purchaseDate.getDayOfMonth() <= cutoffDay ? purchaseDate : purchaseDate.plusMonths(1);
-        var anchor = atDay(base, paymentDay);
-        if (!anchor.isAfter(purchaseDate)) {
-            anchor = atDay(base.plusMonths(1), paymentDay);
-        }
-        return anchor;
-    }
-
-    private LocalDate atDay(LocalDate month, int day) {
-        return month.withDayOfMonth(Math.min(day, month.lengthOfMonth()));
     }
 }

@@ -43,6 +43,14 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
         var compDue = command.compensatoryInterestDue() != null ? command.compensatoryInterestDue() : BigDecimal.ZERO;
         var principalDue = account.getBalance();
 
+        // No partial payments on the payment date: the full outstanding debt must be settled (brief §5).
+        var totalDue = principalDue.add(lateDue).add(compDue);
+        if (command.amount().compareTo(totalDue) < 0) {
+            return Result.failure(ApplicationError.businessRuleViolation(
+                    "partial-payment",
+                    "Partial payments are not allowed; the full amount due (%s) must be paid".formatted(totalDue)));
+        }
+
         var allocation = PaymentAllocationCalculator.allocate(command.amount(), lateDue, compDue, principalDue);
 
         account.reduceBalance(allocation.toPrincipal());
