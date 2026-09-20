@@ -8,6 +8,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.entities.Role;
 import com.vaultchecker.platform.iam.domain.model.events.UserSignedUpEvent;
+import com.vaultchecker.platform.iam.domain.model.valueobjects.RoleNameMapper;
 import com.vaultchecker.platform.iam.domain.model.valueobjects.Roles;
 import com.vaultchecker.platform.iam.domain.repositories.RoleRepository;
 import com.vaultchecker.platform.iam.domain.repositories.UserRepository;
@@ -85,13 +86,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     private Roles resolveRoleName(String requestedRole) {
-        if (requestedRole == null || requestedRole.isBlank()) {
-            return Role.getDefaultRole().getName();
-        }
-        try {
-            return Roles.valueOf(requestedRole.trim());
-        } catch (IllegalArgumentException ignored) {
-            return Role.getDefaultRole().getName();
-        }
+        // Accepts both the frontend's kebab-case ("store-admin") and the enum name ("ROLE_STORE_ADMIN").
+        return RoleNameMapper.fromClientRole(requestedRole, Role.getDefaultRole().getName());
     }
 }
