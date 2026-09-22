@@ -7,9 +7,6 @@ import com.vaultchecker.platform.catalog.domain.model.queries.GetProductByIdQuer
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Application service contract for product read queries.
- */
 public interface ProductQueryService {
     List<Product> handle(GetAllProductsQuery query);
 

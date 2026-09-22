@@ -23,10 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller exposing store resources. Only platform administrators should register or
- * deactivate stores.
- */
 @RestController
 @RequestMapping(value = "/api/v1/stores", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Stores", description = "Platform store management endpoints")

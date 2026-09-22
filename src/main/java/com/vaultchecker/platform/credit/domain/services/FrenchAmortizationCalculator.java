@@ -9,15 +9,6 @@ import java.util.List;
 
 import static com.vaultchecker.platform.credit.domain.services.FinanceConstants.*;
 
-/**
- * Builds a payment schedule using the <b>French method (vencido)</b> with equal installments, as
- * required for the installment ("meses") modality. Commercial months of 30 days are used and
- * the principal is capitalised for the grace period before the installment is computed.
- *
- * <p>Fixed installment: {@code A = P * r / (1 - (1 + r)^-n)} where {@code r} is the effective monthly
- * rate (derived from the effective annual rate over a 30-day month) and {@code n} the number of
- * months.</p>
- */
 public final class FrenchAmortizationCalculator {
 
     private static final MathContext MC = new MathContext(20);
@@ -25,15 +16,6 @@ public final class FrenchAmortizationCalculator {
     private FrenchAmortizationCalculator() {
     }
 
-    /**
-     * Computes the fixed installment (cuota) after capitalising the grace period.
-     *
-     * @param principal          the purchase amount financed
-     * @param effectiveAnnualRate the customer's effective annual rate
-     * @param months             number of monthly installments (must be >= 1)
-     * @param graceDays          dead days between the purchase and the first installment
-     * @return the fixed installment rounded to 2 decimals
-     */
     public static BigDecimal fixedInstallment(BigDecimal principal, BigDecimal effectiveAnnualRate,
                                               int months, int graceDays) {
         if (months < 1) {
@@ -51,10 +33,6 @@ public final class FrenchAmortizationCalculator {
         return InterestCalculator.scaleMoney(BigDecimal.valueOf(payment));
     }
 
-    /**
-     * Builds the full amortization schedule (cronograma) with the interest/principal breakdown per
-     * installment. The last installment absorbs any rounding residual so the balance closes at zero.
-     */
     public static List<AmortizationInstallment> schedule(BigDecimal principal, BigDecimal effectiveAnnualRate,
                                                          int months, int graceDays) {
         BigDecimal capitalized = InterestCalculator.capitalizeForGrace(principal, effectiveAnnualRate, graceDays);
@@ -68,7 +46,7 @@ public final class FrenchAmortizationCalculator {
             BigDecimal principalPart;
             BigDecimal payment;
             if (n == months) {
-                // Final installment: clear the remaining balance exactly.
+
                 principalPart = balance;
                 payment = InterestCalculator.scaleMoney(balance.add(interest));
             } else {

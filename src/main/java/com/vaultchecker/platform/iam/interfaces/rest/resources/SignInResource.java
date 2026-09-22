@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/**
- * Resource received to authenticate an existing user.
- */
 @Schema(name = "SignInRequest", description = "User sign-in request with credentials")
 public record SignInResource(
         @Schema(description = "User email", example = "owner@bodega.pe", maxLength = 120)

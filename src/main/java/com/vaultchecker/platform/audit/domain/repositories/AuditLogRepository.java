@@ -5,9 +5,6 @@ import com.vaultchecker.platform.audit.domain.model.aggregates.AuditLog;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Audit log repository port.
- */
 public interface AuditLogRepository {
     AuditLog save(AuditLog auditLog);
 

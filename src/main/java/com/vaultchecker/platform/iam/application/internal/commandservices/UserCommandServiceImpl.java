@@ -20,9 +20,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * User command service implementation.
- */
 @Service
 public class UserCommandServiceImpl implements UserCommandService {
 
@@ -65,8 +62,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
 
         var roleName = resolveRoleName(command.roleName());
-        // Get-or-create: the role is persisted the first time it is used, so no startup
-        // seeding of hardcoded data is required.
+
         var role = roleRepository.findByName(roleName)
                 .orElseGet(() -> roleRepository.save(new Role(roleName)));
 
@@ -86,7 +82,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     private Roles resolveRoleName(String requestedRole) {
-        // Accepts both the frontend's kebab-case ("store-admin") and the enum name ("ROLE_STORE_ADMIN").
+
         return RoleNameMapper.fromClientRole(requestedRole, Role.getDefaultRole().getName());
     }
 }

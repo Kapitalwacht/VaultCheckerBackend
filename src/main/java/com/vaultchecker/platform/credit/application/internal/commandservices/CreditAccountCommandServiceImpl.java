@@ -9,9 +9,6 @@ import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 import org.springframework.stereotype.Service;
 
-/**
- * Credit account command service implementation.
- */
 @Service
 public class CreditAccountCommandServiceImpl implements CreditAccountCommandService {
 

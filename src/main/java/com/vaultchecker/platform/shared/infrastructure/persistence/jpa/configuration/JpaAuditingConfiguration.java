@@ -3,12 +3,6 @@ package com.vaultchecker.platform.shared.infrastructure.persistence.jpa.configur
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-/**
- * Enables Spring Data JPA auditing so that {@code @CreatedDate} and
- * {@code @LastModifiedDate} fields (see
- * {@link com.vaultchecker.platform.shared.infrastructure.persistence.jpa.entities.AuditableAbstractPersistenceEntity})
- * are populated automatically on persist and update.
- */
 @Configuration
 @EnableJpaAuditing
 public class JpaAuditingConfiguration {

@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Spring Data repository for credit account persistence entities.
- */
 @Repository
 public interface CreditAccountPersistenceRepository extends JpaRepository<CreditAccountPersistenceEntity, Long> {
     List<CreditAccountPersistenceEntity> findAllByStoreId(String storeId);

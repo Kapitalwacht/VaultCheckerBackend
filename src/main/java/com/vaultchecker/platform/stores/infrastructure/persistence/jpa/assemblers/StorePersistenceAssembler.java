@@ -3,9 +3,6 @@ package com.vaultchecker.platform.stores.infrastructure.persistence.jpa.assemble
 import com.vaultchecker.platform.stores.domain.model.aggregates.Store;
 import com.vaultchecker.platform.stores.infrastructure.persistence.jpa.entities.StorePersistenceEntity;
 
-/**
- * Static assembler between store domain and persistence representations.
- */
 public final class StorePersistenceAssembler {
 
     private StorePersistenceAssembler() {

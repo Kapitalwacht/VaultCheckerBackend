@@ -6,9 +6,6 @@ import com.vaultchecker.platform.audit.domain.model.commands.RecordAuditLogComma
 import com.vaultchecker.platform.audit.domain.repositories.AuditLogRepository;
 import org.springframework.stereotype.Service;
 
-/**
- * Audit log command service implementation.
- */
 @Service
 public class AuditLogCommandServiceImpl implements AuditLogCommandService {
 

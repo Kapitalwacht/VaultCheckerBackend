@@ -11,9 +11,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * JPA persistence entity for credit accounts.
- */
 @Entity
 @Table(name = "credit_accounts")
 @Getter

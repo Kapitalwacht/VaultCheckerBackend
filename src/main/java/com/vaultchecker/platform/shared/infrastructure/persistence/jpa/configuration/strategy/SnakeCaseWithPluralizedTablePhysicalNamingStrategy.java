@@ -6,14 +6,6 @@ import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 
 import static io.github.encryptorcode.pluralize.Pluralize.pluralize;
 
-/**
- * Snake Case With Pluralized Table Physical Naming Strategy.
- *
- * <p>PhysicalNamingStrategy implementation that converts entity names to snake_case
- * and table names to pluralized snake_case.</p>
- *
- * @since 1.0.0
- */
 public class SnakeCaseWithPluralizedTablePhysicalNamingStrategy implements PhysicalNamingStrategy {
     @Override
     public Identifier toPhysicalCatalogName(Identifier identifier, JdbcEnvironment jdbcEnvironment) {

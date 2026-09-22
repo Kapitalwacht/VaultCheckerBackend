@@ -15,12 +15,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Bearer Authorization Request Filter.
- *
- * <p>Extracts and validates the JWT bearer token from each request and, when valid, sets the
- * authenticated principal in the security context.</p>
- */
 @Slf4j
 public class BearerAuthorizationRequestFilter extends OncePerRequestFilter {
 

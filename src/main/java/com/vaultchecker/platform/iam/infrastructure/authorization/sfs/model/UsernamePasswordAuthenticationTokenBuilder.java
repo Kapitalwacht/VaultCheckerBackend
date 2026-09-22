@@ -5,10 +5,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
-/**
- * Builds the {@link UsernamePasswordAuthenticationToken} used to authenticate the user in the
- * security context once a bearer token has been validated.
- */
 public class UsernamePasswordAuthenticationTokenBuilder {
 
     public static UsernamePasswordAuthenticationToken build(UserDetails principal, HttpServletRequest request) {

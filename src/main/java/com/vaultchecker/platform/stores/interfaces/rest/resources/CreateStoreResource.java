@@ -3,9 +3,6 @@ package com.vaultchecker.platform.stores.interfaces.rest.resources;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/**
- * Resource received to register a new store.
- */
 public record CreateStoreResource(
         @Size(max = 60) String storeId,
         @Size(max = 20) String ruc,

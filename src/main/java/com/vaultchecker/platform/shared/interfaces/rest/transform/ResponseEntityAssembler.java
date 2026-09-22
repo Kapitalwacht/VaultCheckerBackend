@@ -8,19 +8,12 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.function.Function;
 
-/**
- * Assembler that translates application Result values into HTTP responses.
- */
 @NullMarked
 public final class ResponseEntityAssembler {
 
     private ResponseEntityAssembler() {
     }
 
-    /**
-     * Converts a Result into an HTTP response using the provided success resource assembler.
-     * Failure responses are delegated to ErrorResponseAssembler.
-     */
     public static <T, R> ResponseEntity<?> toResponseEntityFromResult(
             Result<T, ApplicationError> result,
             Function<T, R> successResourceAssembler,

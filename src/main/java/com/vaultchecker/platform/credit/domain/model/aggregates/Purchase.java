@@ -7,10 +7,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Purchase aggregate root. A credit purchase a customer makes at a store. Its list-price amount
- * and month count feed the French amortization / payment plan.
- */
 @Getter
 public class Purchase extends AbstractDomainAggregateRoot<Purchase> {
 

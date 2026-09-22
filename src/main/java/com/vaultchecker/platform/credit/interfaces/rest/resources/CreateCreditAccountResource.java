@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Resource received to open a credit account.
- */
 public record CreateCreditAccountResource(
         @Size(max = 60) String creditId,
         @Size(max = 60) String storeId,

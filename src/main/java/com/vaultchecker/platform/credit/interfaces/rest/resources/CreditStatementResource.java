@@ -4,9 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Resource representing a customer's cutoff-date statement (listado de pago, US-21).
- */
 public record CreditStatementResource(
         String customerId,
         String storeId,
@@ -18,7 +15,6 @@ public record CreditStatementResource(
         BigDecimal moratoryInterest,
         BigDecimal totalToPay) {
 
-    /** One statement line for a fin-de-mes purchase. */
     public record LineResource(
             String purchaseId,
             String description,

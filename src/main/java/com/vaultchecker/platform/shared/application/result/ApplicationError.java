@@ -2,30 +2,16 @@ package com.vaultchecker.platform.shared.application.result;
 
 import org.jspecify.annotations.NullMarked;
 
-/**
- * Represents an error that occurred in the application layer.
- * Designed to be easily mapped to HTTP responses and provide structured error information.
- *
- * @param code     A machine-readable error code (e.g., "STORE_NOT_FOUND", "CREDIT_LIMIT_EXCEEDED")
- * @param message  A human-readable error message
- * @param details  Optional additional context about the error
- */
 @NullMarked
 public record ApplicationError(
         String code,
         String message,
         String details) {
 
-    /**
-     * Creates an ApplicationError with code and message only.
-     */
     public ApplicationError(String code, String message) {
         this(code, message, null);
     }
 
-    /**
-     * Validation error: input data is invalid or violates constraints
-     */
     public static ApplicationError validationError(String fieldOrConcept, String reason) {
         return new ApplicationError(
                 "VALIDATION_ERROR",
@@ -33,9 +19,6 @@ public record ApplicationError(
                 reason);
     }
 
-    /**
-     * Not found error: the requested resource does not exist
-     */
     public static ApplicationError notFound(String resourceType, String identifier) {
         return new ApplicationError(
                 "%s_NOT_FOUND".formatted(resourceType.toUpperCase()),
@@ -43,9 +26,6 @@ public record ApplicationError(
                 null);
     }
 
-    /**
-     * Business rule violation error: operation violates domain constraints
-     */
     public static ApplicationError businessRuleViolation(String rule, String reason) {
         return new ApplicationError(
                 "BUSINESS_RULE_VIOLATION",
@@ -53,9 +33,6 @@ public record ApplicationError(
                 reason);
     }
 
-    /**
-     * Conflict error: operation cannot be completed due to conflicting state
-     */
     public static ApplicationError conflict(String resource, String reason) {
         return new ApplicationError(
                 "%s_CONFLICT".formatted(resource.toUpperCase()),
@@ -63,9 +40,6 @@ public record ApplicationError(
                 reason);
     }
 
-    /**
-     * Unexpected error: something went wrong that shouldn't have
-     */
     public static ApplicationError unexpected(String context, String reason) {
         return new ApplicationError(
                 "UNEXPECTED_ERROR",

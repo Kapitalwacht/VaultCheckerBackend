@@ -10,9 +10,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Application service that resolves IAM role read queries.
- */
 @Service
 public class RoleQueryServiceImpl implements RoleQueryService {
     private final RoleRepository roleRepository;

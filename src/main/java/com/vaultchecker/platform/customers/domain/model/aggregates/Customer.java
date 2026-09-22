@@ -6,11 +6,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * Customer aggregate root. A neighbour the store extends credit to. Scoped to a store
- * ({@code storeId}) for tenant isolation. Carries the agreed credit terms (rate, currency,
- * cutoff/payment calendar). Deactivation is logical.
- */
 @Getter
 public class Customer extends AbstractDomainAggregateRoot<Customer> {
 

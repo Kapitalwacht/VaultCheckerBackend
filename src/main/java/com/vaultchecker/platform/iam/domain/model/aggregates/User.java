@@ -9,9 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * User aggregate root. A user authenticates against the platform and carries one or more roles.
- */
 @Getter
 public class User extends AbstractDomainAggregateRoot<User> {
 
@@ -59,17 +56,11 @@ public class User extends AbstractDomainAggregateRoot<User> {
         addRoles(roles);
     }
 
-    /**
-     * Add a role to the user.
-     */
     public User addRole(Role role) {
         this.roles.add(role);
         return this;
     }
 
-    /**
-     * Add a list of roles to the user.
-     */
     public User addRoles(List<Role> roles) {
         var validatedRoleSet = Role.validateRoleSet(roles);
         this.roles.addAll(validatedRoleSet);

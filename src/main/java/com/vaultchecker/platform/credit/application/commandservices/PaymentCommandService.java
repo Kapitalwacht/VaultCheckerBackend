@@ -5,9 +5,6 @@ import com.vaultchecker.platform.credit.domain.model.commands.RegisterPaymentCom
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 
-/**
- * Application service contract for payment commands.
- */
 public interface PaymentCommandService {
     Result<Payment, ApplicationError> handle(RegisterPaymentCommand command);
 }

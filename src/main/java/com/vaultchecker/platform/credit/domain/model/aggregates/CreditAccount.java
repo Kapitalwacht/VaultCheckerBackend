@@ -7,11 +7,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Credit account aggregate root. Represents a customer's running account (cuenta corriente) at a
- * store: the outstanding {@code balance}, the {@code creditLimit} and the {@code dueDate}. Scoped to a
- * store ({@code storeId}) for tenant isolation.
- */
 @Getter
 public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
 
@@ -52,23 +47,19 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
         this.state = CURRENT;
     }
 
-    /** Available credit = limit - balance (never negative). */
     public BigDecimal availableCredit() {
         var available = creditLimit.subtract(balance);
         return available.signum() < 0 ? BigDecimal.ZERO : available;
     }
 
-    /** Whether a charge of {@code amount} would exceed the credit limit. */
     public boolean wouldExceedLimit(BigDecimal amount) {
         return balance.add(amount).compareTo(creditLimit) > 0;
     }
 
-    /** Adds a charge to the outstanding balance. */
     public void addCharge(BigDecimal amount) {
         this.balance = this.balance.add(amount);
     }
 
-    /** Reduces the outstanding balance (after a payment) without going below zero. */
     public void reduceBalance(BigDecimal amount) {
         this.balance = this.balance.subtract(amount).max(BigDecimal.ZERO);
     }

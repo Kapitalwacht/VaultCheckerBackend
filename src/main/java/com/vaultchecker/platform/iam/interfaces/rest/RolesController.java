@@ -15,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * REST controller that exposes IAM role resources.
- */
 @RestController
 @RequestMapping(value = "/api/v1/roles", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Roles", description = "Role management endpoints")

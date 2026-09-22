@@ -5,9 +5,6 @@ import com.vaultchecker.platform.catalog.domain.model.aggregates.Product;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Product repository port.
- */
 public interface ProductRepository {
     Optional<Product> findById(Long id);
 

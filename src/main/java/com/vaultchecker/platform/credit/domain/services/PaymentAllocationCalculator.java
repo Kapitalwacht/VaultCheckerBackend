@@ -4,24 +4,11 @@ import com.vaultchecker.platform.credit.domain.model.valueobjects.PaymentAllocat
 
 import java.math.BigDecimal;
 
-/**
- * Applies the payment allocation order: an incoming payment is imputed in strict order to
- * (1) moratory/late interest, (2) compensatory interest, and finally (3) principal (capital).
- */
 public final class PaymentAllocationCalculator {
 
     private PaymentAllocationCalculator() {
     }
 
-    /**
-     * Allocates {@code payment} across the outstanding buckets in allocation order order.
-     *
-     * @param payment              the amount being paid
-     * @param lateInterestDue      outstanding moratory interest
-     * @param compensatoryDue      outstanding compensatory interest
-     * @param principalDue         outstanding principal
-     * @return the breakdown of how the payment was applied, with any leftover in {@code unapplied}
-     */
     public static PaymentAllocation allocate(BigDecimal payment, BigDecimal lateInterestDue,
                                              BigDecimal compensatoryDue, BigDecimal principalDue) {
         BigDecimal remaining = InterestCalculator.scaleMoney(payment);

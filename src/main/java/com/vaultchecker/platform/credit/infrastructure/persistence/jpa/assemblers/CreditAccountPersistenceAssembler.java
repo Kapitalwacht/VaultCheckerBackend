@@ -3,9 +3,6 @@ package com.vaultchecker.platform.credit.infrastructure.persistence.jpa.assemble
 import com.vaultchecker.platform.credit.domain.model.aggregates.CreditAccount;
 import com.vaultchecker.platform.credit.infrastructure.persistence.jpa.entities.CreditAccountPersistenceEntity;
 
-/**
- * Static assembler between credit account domain and persistence representations.
- */
 public final class CreditAccountPersistenceAssembler {
 
     private CreditAccountPersistenceAssembler() {

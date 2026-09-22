@@ -14,9 +14,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-/**
- * Configures the OpenAPI specification exposed by the platform (Swagger UI at /swagger-ui.html).
- */
 @Configuration
 public class OpenApiConfiguration {
 
@@ -29,9 +26,6 @@ public class OpenApiConfiguration {
     @Value("${documentation.application.version}")
     String applicationVersion;
 
-    /**
-     * Builds the OpenAPI document used by Swagger UI and client generation tools.
-     */
     @Bean
     public OpenAPI vaultCheckerPlatformOpenApi() {
         var openApi = new OpenAPI();

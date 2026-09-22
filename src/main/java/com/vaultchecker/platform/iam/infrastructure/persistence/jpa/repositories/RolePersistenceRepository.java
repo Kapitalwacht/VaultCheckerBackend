@@ -7,9 +7,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Spring Data repository for IAM role persistence entities.
- */
 @Repository
 public interface RolePersistenceRepository extends JpaRepository<RolePersistenceEntity, Long> {
 

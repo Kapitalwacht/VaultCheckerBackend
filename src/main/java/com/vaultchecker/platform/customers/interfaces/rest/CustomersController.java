@@ -23,9 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller exposing customer resources. Customers can be filtered by store.
- */
 @RestController
 @RequestMapping(value = "/api/v1/customers", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Customers", description = "Store customer management endpoints")

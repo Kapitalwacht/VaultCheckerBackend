@@ -4,11 +4,6 @@ import com.vaultchecker.platform.shared.domain.model.aggregates.AbstractDomainAg
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Store aggregate root. Represents a neighbourhood business (bodega, butcher, bakery, ...) that
- * operates on the platform. Deactivation is logical so history is preserved; every product,
- * customer and credit account is scoped to a store to keep tenants isolated.
- */
 @Getter
 public class Store extends AbstractDomainAggregateRoot<Store> {
 
@@ -53,12 +48,10 @@ public class Store extends AbstractDomainAggregateRoot<Store> {
         this.state = ACTIVE;
     }
 
-    /** Logically deactivates the store without deleting its data. */
     public void deactivate() {
         this.state = INACTIVE;
     }
 
-    /** Reactivates a previously deactivated store. */
     public void activate() {
         this.state = ACTIVE;
     }

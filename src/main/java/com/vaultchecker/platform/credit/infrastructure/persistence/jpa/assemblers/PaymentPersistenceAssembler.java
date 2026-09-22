@@ -3,9 +3,6 @@ package com.vaultchecker.platform.credit.infrastructure.persistence.jpa.assemble
 import com.vaultchecker.platform.credit.domain.model.aggregates.Payment;
 import com.vaultchecker.platform.credit.infrastructure.persistence.jpa.entities.PaymentPersistenceEntity;
 
-/**
- * Static assembler between payment domain and persistence representations.
- */
 public final class PaymentPersistenceAssembler {
 
     private PaymentPersistenceAssembler() {

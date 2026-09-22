@@ -5,9 +5,6 @@ import com.vaultchecker.platform.credit.domain.model.aggregates.CreditAccount;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Credit account repository port.
- */
 public interface CreditAccountRepository {
     Optional<CreditAccount> findById(Long id);
 

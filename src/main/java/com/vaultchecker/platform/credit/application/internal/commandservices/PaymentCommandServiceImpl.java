@@ -12,11 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
-/**
- * Payment command service implementation. Applies the payment allocation order: the amount is imputed
- * to moratory interest, then compensatory interest, then principal; the credit account balance is then
- * reduced by the principal portion.
- */
 @Service
 public class PaymentCommandServiceImpl implements PaymentCommandService {
 
@@ -43,7 +38,6 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
         var compDue = command.compensatoryInterestDue() != null ? command.compensatoryInterestDue() : BigDecimal.ZERO;
         var principalDue = account.getBalance();
 
-        // No partial payments on the payment date: the full outstanding debt must be settled (brief §5).
         var totalDue = principalDue.add(lateDue).add(compDue);
         if (command.amount().compareTo(totalDue) < 0) {
             return Result.failure(ApplicationError.businessRuleViolation(

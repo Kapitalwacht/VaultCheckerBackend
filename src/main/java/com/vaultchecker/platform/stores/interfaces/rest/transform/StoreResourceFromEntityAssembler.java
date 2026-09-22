@@ -3,9 +3,6 @@ package com.vaultchecker.platform.stores.interfaces.rest.transform;
 import com.vaultchecker.platform.stores.domain.model.aggregates.Store;
 import com.vaultchecker.platform.stores.interfaces.rest.resources.StoreResource;
 
-/**
- * Assembler that converts a {@link Store} aggregate into a {@link StoreResource}.
- */
 public class StoreResourceFromEntityAssembler {
     public static StoreResource toResourceFromEntity(Store store) {
         return new StoreResource(store.getId(), store.getStoreId(), store.getRuc(), store.getBusinessName(),

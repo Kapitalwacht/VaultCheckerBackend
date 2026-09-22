@@ -3,9 +3,6 @@ package com.vaultchecker.platform.audit.infrastructure.persistence.jpa.assembler
 import com.vaultchecker.platform.audit.domain.model.aggregates.AuditLog;
 import com.vaultchecker.platform.audit.infrastructure.persistence.jpa.entities.AuditLogPersistenceEntity;
 
-/**
- * Static assembler between audit log domain and persistence representations.
- */
 public final class AuditLogPersistenceAssembler {
 
     private AuditLogPersistenceAssembler() {

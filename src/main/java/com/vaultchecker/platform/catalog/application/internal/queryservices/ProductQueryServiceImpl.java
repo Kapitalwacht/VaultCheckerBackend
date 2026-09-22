@@ -10,9 +10,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Product query service implementation.
- */
 @Service
 public class ProductQueryServiceImpl implements ProductQueryService {
 

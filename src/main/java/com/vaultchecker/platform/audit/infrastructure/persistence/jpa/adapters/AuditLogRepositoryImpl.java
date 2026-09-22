@@ -9,9 +9,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository adapter that bridges the audit log domain repository port with Spring Data JPA.
- */
 @Repository
 public class AuditLogRepositoryImpl implements AuditLogRepository {
 

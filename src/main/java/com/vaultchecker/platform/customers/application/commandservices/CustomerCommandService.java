@@ -7,9 +7,6 @@ import com.vaultchecker.platform.customers.domain.model.commands.UpdateCustomerC
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 
-/**
- * Application service contract for customer commands.
- */
 public interface CustomerCommandService {
     Result<Customer, ApplicationError> handle(CreateCustomerCommand command);
 

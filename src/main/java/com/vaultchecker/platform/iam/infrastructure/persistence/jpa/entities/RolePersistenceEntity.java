@@ -6,9 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * JPA persistence entity for IAM roles.
- */
 @Entity
 @Table(name = "roles")
 @Getter

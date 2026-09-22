@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * REST controller exposing audit log resources for traceability.
- */
 @RestController
 @RequestMapping(value = "/api/v1/audit-logs", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Audit Logs", description = "Operation traceability endpoints")

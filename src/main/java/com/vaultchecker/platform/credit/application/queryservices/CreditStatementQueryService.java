@@ -5,9 +5,6 @@ import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditStatemen
 
 import java.util.Optional;
 
-/**
- * Application service contract for building a customer's cutoff-date statement (US-21).
- */
 public interface CreditStatementQueryService {
     Optional<CreditStatement> handle(GetCreditStatementQuery query);
 }

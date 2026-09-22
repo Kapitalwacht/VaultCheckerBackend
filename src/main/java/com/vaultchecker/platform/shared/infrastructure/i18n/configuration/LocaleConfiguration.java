@@ -8,9 +8,6 @@ import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Configures locale resolution for REST requests based on the Accept-Language header.
- */
 @Configuration
 public class LocaleConfiguration {
 

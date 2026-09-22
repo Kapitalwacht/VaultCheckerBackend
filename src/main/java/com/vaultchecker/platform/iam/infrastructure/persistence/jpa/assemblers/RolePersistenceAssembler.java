@@ -3,9 +3,6 @@ package com.vaultchecker.platform.iam.infrastructure.persistence.jpa.assemblers;
 import com.vaultchecker.platform.iam.domain.model.entities.Role;
 import com.vaultchecker.platform.iam.infrastructure.persistence.jpa.entities.RolePersistenceEntity;
 
-/**
- * Static assembler between IAM role domain and persistence representations.
- */
 public final class RolePersistenceAssembler {
 
     private RolePersistenceAssembler() {

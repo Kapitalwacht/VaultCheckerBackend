@@ -5,10 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Resource received to register a payment against a credit account.
- * {@code lateInterestDue} and {@code compensatoryInterestDue} feed the payment allocation order.
- */
 public record RegisterPaymentResource(
         @NotNull Long creditAccountId,
         String storeId,

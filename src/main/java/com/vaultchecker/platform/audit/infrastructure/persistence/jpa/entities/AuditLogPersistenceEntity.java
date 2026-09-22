@@ -8,9 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * JPA persistence entity for audit logs.
- */
 @Entity
 @Table(name = "audit_logs")
 @Getter

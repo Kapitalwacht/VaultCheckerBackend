@@ -23,10 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller exposing catalog product resources. Products can be filtered by store to keep
- * tenants isolated.
- */
 @RestController
 @RequestMapping(value = "/api/v1/products", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Products", description = "Store catalog (products/services) endpoints")

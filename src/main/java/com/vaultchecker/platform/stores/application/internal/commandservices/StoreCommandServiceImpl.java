@@ -10,9 +10,6 @@ import com.vaultchecker.platform.stores.domain.model.commands.UpdateStoreCommand
 import com.vaultchecker.platform.stores.domain.repositories.StoreRepository;
 import org.springframework.stereotype.Service;
 
-/**
- * Store command service implementation.
- */
 @Service
 public class StoreCommandServiceImpl implements StoreCommandService {
 

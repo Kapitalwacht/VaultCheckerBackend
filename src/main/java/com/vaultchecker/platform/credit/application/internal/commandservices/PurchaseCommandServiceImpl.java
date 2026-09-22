@@ -21,15 +21,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Purchase command service. Beyond persisting the purchase it wires the financial engine into the flow:
- * <ul>
- *     <li>rejects purchases that would exceed the customer's available credit (brief §5);</li>
- *     <li>updates the credit account balance (fin de mes: full amount; instalments: capitalised principal);</li>
- *     <li>for the instalment modality, generates the French-method schedule with grace-period
- *         capitalisation and persists each {@link InstallmentPayment}.</li>
- * </ul>
- */
 @Service
 public class PurchaseCommandServiceImpl implements PurchaseCommandService {
 
@@ -57,7 +48,6 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
             return Result.failure(ApplicationError.validationError("amount", "Purchase amount must be positive"));
         }
 
-        // Locate the customer's credit account (if any) to enforce the credit limit.
         var account = creditAccountRepository.findAllByCustomerId(command.customerId()).stream()
                 .findFirst().orElse(null);
 
@@ -76,7 +66,6 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         if (account != null) {
             int months = command.months() == null ? 1 : command.months();
             if (months <= 1) {
-                // Fin de mes: the full amount is added to the running balance.
                 account.addCharge(command.amount());
             } else {
                 generateInstallmentSchedule(command, account, months);
@@ -87,10 +76,6 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         return Result.success(savedPurchase);
     }
 
-    /**
-     * Builds the French-method schedule for an instalment purchase, capitalising the grace period, and
-     * persists the resulting instalments. The capitalised principal becomes the account's new debt.
-     */
     private void generateInstallmentSchedule(RegisterPurchaseCommand command, CreditAccount account, int months) {
         var customer = findCustomer(command.customerId());
         var effectiveAnnualRate = customer == null ? BigDecimal.ZERO : CreditCycle.effectiveAnnualRate(
@@ -111,7 +96,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
             installment.setCustomerId(command.customerId());
             installment.setPurchaseId(command.purchaseId());
             installment.setPeriod(row.number());
-            // First instalment falls one month after the grace period ends.
+
             installment.setScheduledDate(graceEnd.plusMonths(row.number()));
             installment.setPaidDate(null);
             installment.setInstallment(row.payment());

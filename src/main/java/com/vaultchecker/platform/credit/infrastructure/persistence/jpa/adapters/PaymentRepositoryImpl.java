@@ -8,9 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Repository adapter that bridges the payment domain repository port with Spring Data JPA.
- */
 @Repository
 public class PaymentRepositoryImpl implements PaymentRepository {
 

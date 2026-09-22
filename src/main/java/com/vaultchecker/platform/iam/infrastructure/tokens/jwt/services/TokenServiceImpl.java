@@ -17,10 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
-/**
- * JWT token service implementation. Generates and validates HMAC-signed JWT tokens using the
- * secret and expiration configured in application.properties.
- */
 @Service
 @Slf4j
 public class TokenServiceImpl implements BearerTokenService {

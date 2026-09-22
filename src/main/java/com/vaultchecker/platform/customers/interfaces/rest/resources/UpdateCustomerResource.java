@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-/**
- * Resource received to update an existing customer.
- */
 public record UpdateCustomerResource(
         @Size(max = 60) String customerId,
         @Size(max = 60) String storeId,

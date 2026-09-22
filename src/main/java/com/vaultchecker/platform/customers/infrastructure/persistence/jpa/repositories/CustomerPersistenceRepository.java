@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Spring Data repository for customer persistence entities.
- */
 @Repository
 public interface CustomerPersistenceRepository extends JpaRepository<CustomerPersistenceEntity, Long> {
     List<CustomerPersistenceEntity> findAllByStoreId(String storeId);

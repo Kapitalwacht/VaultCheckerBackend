@@ -9,9 +9,6 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * JPA persistence entity for IAM users.
- */
 @Entity
 @Table(name = "users")
 @Getter

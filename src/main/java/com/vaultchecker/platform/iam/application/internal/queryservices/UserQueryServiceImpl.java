@@ -11,9 +11,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Application service that resolves IAM user read queries.
- */
 @Service
 public class UserQueryServiceImpl implements UserQueryService {
     private final UserRepository userRepository;

@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST controller exposing payment registration. Applies the payment allocation order.
- */
 @RestController
 @RequestMapping(value = "/api/v1/payments", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Payments", description = "Credit payment endpoints")

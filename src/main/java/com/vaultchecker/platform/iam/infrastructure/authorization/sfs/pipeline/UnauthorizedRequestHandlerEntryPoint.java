@@ -10,9 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * Handles unauthorized requests by returning a 401 response.
- */
 @Component
 @Slf4j
 public class UnauthorizedRequestHandlerEntryPoint implements AuthenticationEntryPoint {

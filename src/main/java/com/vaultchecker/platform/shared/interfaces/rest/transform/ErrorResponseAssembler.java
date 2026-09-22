@@ -13,9 +13,6 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-/**
- * Assembler for converting application errors to HTTP responses.
- */
 @NullMarked
 public final class ErrorResponseAssembler {
     private static final String MESSAGES_BASENAME = "messages";
@@ -23,10 +20,6 @@ public final class ErrorResponseAssembler {
     private ErrorResponseAssembler() {
     }
 
-    /**
-     * Maps an ApplicationError to an appropriate HTTP ResponseEntity.
-     * Automatically selects the correct HTTP status code based on the error code.
-     */
     public static ResponseEntity<ErrorResource> toErrorResponseFromApplicationError(ApplicationError error) {
         HttpStatusCode status = toStatusFromErrorCode(error.code());
         String localizedMessage = toLocalizedMessageFromApplicationError(error);
@@ -103,9 +96,6 @@ public final class ErrorResponseAssembler {
         }
     }
 
-    /**
-     * Determines the appropriate HTTP status code for a given error code.
-     */
     public static HttpStatusCode toStatusFromErrorCode(String errorCode) {
         return switch (errorCode) {
             case "VALIDATION_ERROR" -> HttpStatus.BAD_REQUEST;

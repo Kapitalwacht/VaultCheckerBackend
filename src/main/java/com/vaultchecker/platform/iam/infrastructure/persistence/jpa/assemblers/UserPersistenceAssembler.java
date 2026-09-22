@@ -6,9 +6,6 @@ import com.vaultchecker.platform.iam.infrastructure.persistence.jpa.entities.Use
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
-/**
- * Static assembler between IAM user domain and persistence representations.
- */
 public final class UserPersistenceAssembler {
 
     private UserPersistenceAssembler() {
@@ -39,7 +36,7 @@ public final class UserPersistenceAssembler {
     public static UserPersistenceEntity toPersistenceFromDomain(User user) {
         if (user == null) return null;
         var entity = new UserPersistenceEntity();
-        // Only set the ID when updating an existing user; leave it null for JPA to generate.
+
         if (user.getId() != null) {
             entity.setId(user.getId());
         }

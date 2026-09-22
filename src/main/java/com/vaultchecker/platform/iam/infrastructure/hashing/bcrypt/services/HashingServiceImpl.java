@@ -4,9 +4,6 @@ import com.vaultchecker.platform.iam.infrastructure.hashing.bcrypt.BCryptHashing
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-/**
- * BCrypt implementation of the {@link BCryptHashingService}.
- */
 @Service
 public class HashingServiceImpl implements BCryptHashingService {
     private final BCryptPasswordEncoder passwordEncoder;

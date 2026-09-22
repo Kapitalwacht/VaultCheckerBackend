@@ -28,10 +28,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * REST controller exposing credit account resources. Accounts can be filtered by store or customer
- * (a customer sees only their own account).
- */
 @RestController
 @RequestMapping(value = "/api/v1/credit-accounts", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Credit Accounts", description = "Customer credit account (cuenta corriente) endpoints")

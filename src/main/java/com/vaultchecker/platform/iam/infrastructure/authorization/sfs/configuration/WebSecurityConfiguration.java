@@ -21,13 +21,6 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
-/**
- * Web Security Configuration.
- *
- * <p>Enables method security and configures the stateless JWT security filter chain: the
- * authentication manager, DAO authentication provider, the BCrypt password encoder, the
- * unauthorized entry point and the bearer token filter.</p>
- */
 @Configuration
 @EnableMethodSecurity
 public class WebSecurityConfiguration {

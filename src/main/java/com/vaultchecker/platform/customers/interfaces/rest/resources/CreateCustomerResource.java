@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-/**
- * Resource received to register a new customer.
- */
 public record CreateCustomerResource(
         @Size(max = 60) String customerId,
         @Size(max = 60) String storeId,

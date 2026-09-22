@@ -9,9 +9,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository adapter that bridges the product domain repository port with Spring Data JPA.
- */
 @Repository
 public class ProductRepositoryImpl implements ProductRepository {
 

@@ -7,10 +7,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * InstallmentPayment aggregate root. Records the payment of one scheduled installment of a purchase,
- * keeping the allocation order breakdown (late fee, compensatory interest, principal) and the paid total.
- */
 @Getter
 public class InstallmentPayment extends AbstractDomainAggregateRoot<InstallmentPayment> {
 

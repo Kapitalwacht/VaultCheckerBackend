@@ -7,9 +7,6 @@ import com.vaultchecker.platform.stores.domain.model.commands.CreateStoreCommand
 import com.vaultchecker.platform.stores.domain.model.commands.DeactivateStoreCommand;
 import com.vaultchecker.platform.stores.domain.model.commands.UpdateStoreCommand;
 
-/**
- * Application service contract for store commands.
- */
 public interface StoreCommandService {
     Result<Store, ApplicationError> handle(CreateStoreCommand command);
 

@@ -5,10 +5,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/**
- * Resource received to register a new user. When {@code role} is omitted the server assigns the
- * default {@code ROLE_CUSTOMER}.
- */
 @Schema(name = "SignUpRequest", description = "User sign-up request with credentials")
 public record SignUpResource(
         @Schema(description = "User email", example = "owner@bodega.pe", maxLength = 120)

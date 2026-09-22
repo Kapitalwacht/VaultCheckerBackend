@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Spring Data repository for audit log persistence entities.
- */
 @Repository
 public interface AuditLogPersistenceRepository extends JpaRepository<AuditLogPersistenceEntity, Long> {
     List<AuditLogPersistenceEntity> findAllByDate(String date);

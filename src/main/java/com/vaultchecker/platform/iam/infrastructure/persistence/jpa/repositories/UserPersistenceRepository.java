@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Spring Data repository for IAM user persistence entities.
- */
 @Repository
 public interface UserPersistenceRepository extends JpaRepository<UserPersistenceEntity, Long> {
 

@@ -7,10 +7,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Payment aggregate root. Records a payment made against a credit account, keeping the allocation order
- * breakdown: how much went to moratory interest, compensatory interest and principal.
- */
 @Getter
 public class Payment extends AbstractDomainAggregateRoot<Payment> {
 

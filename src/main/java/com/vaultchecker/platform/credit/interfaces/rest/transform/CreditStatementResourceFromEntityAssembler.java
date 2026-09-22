@@ -3,9 +3,6 @@ package com.vaultchecker.platform.credit.interfaces.rest.transform;
 import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditStatement;
 import com.vaultchecker.platform.credit.interfaces.rest.resources.CreditStatementResource;
 
-/**
- * Assembler that converts a {@link CreditStatement} into a {@link CreditStatementResource}.
- */
 public class CreditStatementResourceFromEntityAssembler {
     public static CreditStatementResource toResourceFromEntity(CreditStatement statement) {
         var lines = statement.lines().stream()

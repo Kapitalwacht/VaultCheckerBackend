@@ -6,9 +6,6 @@ import com.vaultchecker.platform.credit.domain.model.commands.UpdateCreditAccoun
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 
-/**
- * Application service contract for credit account commands.
- */
 public interface CreditAccountCommandService {
     Result<CreditAccount, ApplicationError> handle(CreateCreditAccountCommand command);
 

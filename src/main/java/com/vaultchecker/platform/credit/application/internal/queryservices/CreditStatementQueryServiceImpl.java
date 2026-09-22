@@ -21,10 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Builds a customer's cutoff-date statement (US-21): fin-de-mes purchases ordered by date with their
- * compensatory interest, plus moratory interest when the account is overdue, and the total to pay.
- */
 @Service
 public class CreditStatementQueryServiceImpl implements CreditStatementQueryService {
 

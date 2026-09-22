@@ -7,10 +7,6 @@ import com.vaultchecker.platform.shared.domain.model.events.AuditableActionRegis
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-/**
- * Listens for domain/integration events across the platform and persists an audit log, providing
- * traceability without coupling the emitting contexts to the audit persistence model.
- */
 @Service
 public class AuditEventHandler {
 
@@ -20,13 +16,11 @@ public class AuditEventHandler {
         this.auditLogCommandService = auditLogCommandService;
     }
 
-    /** Records any generic auditable action published through the shared event. */
     @EventListener
     public void on(AuditableActionRegisteredEvent event) {
         auditLogCommandService.handle(new RecordAuditLogCommand(event.userRole(), event.action(), event.details()));
     }
 
-    /** Records new user registrations coming from the IAM context. */
     @EventListener
     public void on(UserSignedUpEvent event) {
         auditLogCommandService.handle(new RecordAuditLogCommand(

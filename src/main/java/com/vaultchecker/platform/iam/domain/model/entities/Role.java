@@ -5,9 +5,6 @@ import lombok.*;
 
 import java.util.List;
 
-/**
- * Role domain entity.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,30 +20,18 @@ public class Role {
         this.name = name;
     }
 
-    /**
-     * Get the name of the role as a string.
-     */
     public String getStringName() {
         return name.name();
     }
 
-    /**
-     * Get the default role assigned when none is specified (a neighbour customer).
-     */
     public static Role getDefaultRole() {
         return new Role(Roles.ROLE_CUSTOMER);
     }
 
-    /**
-     * Get the role from its name.
-     */
     public static Role toRoleFromName(String name) {
         return new Role(Roles.valueOf(name));
     }
 
-    /**
-     * Validate the role set, falling back to the default role when empty.
-     */
     public static List<Role> validateRoleSet(List<Role> roles) {
         if (roles == null || roles.isEmpty()) {
             return List.of(getDefaultRole());

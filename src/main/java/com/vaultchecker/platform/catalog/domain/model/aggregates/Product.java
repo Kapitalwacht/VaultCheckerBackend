@@ -6,11 +6,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * Product aggregate root. A product/service a store offers on credit. Scoped to a store
- * ({@code storeId}) for tenant isolation. Carries cash and list (credit) prices and the
- * accepted payment mode. Deactivation is logical.
- */
 @Getter
 public class Product extends AbstractDomainAggregateRoot<Product> {
 

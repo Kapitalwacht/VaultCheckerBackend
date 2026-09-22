@@ -11,9 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-/**
- * Adapts a domain {@link User} to Spring Security's {@link UserDetails} contract.
- */
 @Getter
 @EqualsAndHashCode
 public class UserDetailsImpl implements UserDetails {
