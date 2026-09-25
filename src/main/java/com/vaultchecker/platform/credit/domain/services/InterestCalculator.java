@@ -14,13 +14,16 @@ public final class InterestCalculator {
     private InterestCalculator() {
     }
 
-    public static BigDecimal toEffectiveAnnual(BigDecimal rate, RateType type, int compoundingsPerYear) {
+    public static BigDecimal toEffectiveAnnual(BigDecimal rate, RateType type, int periodDays, int capitalizationDays) {
+        double value = rate.doubleValue();
+        double effective;
         if (type == RateType.EFFECTIVE) {
-            return scaleRate(rate);
+            effective = Math.pow(1.0 + value, (double) DAY_COUNT_BASE / periodDays) - 1.0;
+        } else {
+            double m = (double) periodDays / capitalizationDays;
+            double n = (double) DAY_COUNT_BASE / capitalizationDays;
+            effective = Math.pow(1.0 + value / m, n) - 1.0;
         }
-
-        double j = rate.doubleValue();
-        double effective = Math.pow(1.0 + j / compoundingsPerYear, compoundingsPerYear) - 1.0;
         return scaleRate(BigDecimal.valueOf(effective));
     }
 

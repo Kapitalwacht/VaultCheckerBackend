@@ -17,11 +17,10 @@ public final class CreditCycle {
             return BigDecimal.ZERO;
         }
         var type = "nominal".equalsIgnoreCase(rateType) ? RateType.NOMINAL : RateType.EFFECTIVE;
-        int period = periodDays != null ? periodDays : FinanceConstants.DAY_COUNT_BASE;
+        int period = periodDays != null && periodDays > 0 ? periodDays : FinanceConstants.DAY_COUNT_BASE;
         int cap = capitalizationDays != null && capitalizationDays > 0
                 ? capitalizationDays : FinanceConstants.COMMERCIAL_MONTH_DAYS;
-        int compoundingsPerYear = Math.max(1, period / cap);
-        return InterestCalculator.toEffectiveAnnual(rateValue, type, compoundingsPerYear);
+        return InterestCalculator.toEffectiveAnnual(rateValue, type, period, cap);
     }
 
     public static LocalDate graceEndDate(LocalDate purchaseDate, int cutoffDay, int paymentDay) {
