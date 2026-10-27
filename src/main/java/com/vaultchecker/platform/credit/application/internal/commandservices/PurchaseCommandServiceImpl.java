@@ -115,7 +115,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
     private Customer findCustomer(String customerId) {
         if (customerId == null) return null;
         return customerRepository.findAll().stream()
-                .filter(c -> customerId.equals(c.getCustomerId()))
+                .filter(c -> customerId.equals(c.getCustomerId()) || customerId.equals(String.valueOf(c.getId())))
                 .findFirst().orElse(null);
     }
 }

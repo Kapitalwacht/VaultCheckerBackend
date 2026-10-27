@@ -20,6 +20,9 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
 
     @Override
     public Result<CreditAccount, ApplicationError> handle(CreateCreditAccountCommand command) {
+        if (command.customerId() != null && !creditAccountRepository.findAllByCustomerId(command.customerId()).isEmpty()) {
+            return Result.failure(ApplicationError.conflict("CreditAccount", "Customer already has a credit account"));
+        }
         var account = new CreditAccount(command.creditId(), command.storeId(), command.customerId(),
                 command.balance(), command.creditLimit(), command.dueDate());
         return Result.success(creditAccountRepository.save(account));
