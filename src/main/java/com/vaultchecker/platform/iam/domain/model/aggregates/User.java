@@ -66,4 +66,63 @@ public class User extends AbstractDomainAggregateRoot<User> {
         this.roles.addAll(validatedRoleSet);
         return this;
     }
+
+    public void issueVerificationToken(String token) {
+        this.emailVerified = false;
+        this.verificationToken = token;
+    }
+
+    public boolean confirmEmail(String token) {
+        if (verificationToken == null || !verificationToken.equals(token)) return false;
+        this.emailVerified = true;
+        this.verificationToken = null;
+        return true;
+    }
+
+    public void changeEmail(String newEmail, String verificationToken) {
+        this.email = newEmail;
+        issueVerificationToken(verificationToken);
+    }
+
+    public void updateProfile(String name, String phone) {
+        this.name = name;
+        this.phone = phone;
+    }
+
+    public void issueRecoveryCode(String code, long expiresAt) {
+        this.recoveryCode = code;
+        this.recoveryExpiresAt = expiresAt;
+    }
+
+    public boolean hasRecoveryCode(String code) {
+        return recoveryCode != null && recoveryCode.equals(code);
+    }
+
+    public boolean isRecoveryCodeExpired(long now) {
+        return recoveryExpiresAt != null && now > recoveryExpiresAt;
+    }
+
+    public void resetPassword(String encodedPassword) {
+        this.password = encodedPassword;
+        this.recoveryCode = null;
+        this.recoveryExpiresAt = null;
+    }
+
+    public void issueLoginCode(String code, long expiresAt) {
+        this.loginCode = code;
+        this.loginCodeExpiresAt = expiresAt;
+    }
+
+    public boolean hasLoginCode(String code) {
+        return loginCode != null && loginCode.equals(code);
+    }
+
+    public boolean isLoginCodeExpired(long now) {
+        return loginCodeExpiresAt != null && now > loginCodeExpiresAt;
+    }
+
+    public void clearLoginCode() {
+        this.loginCode = null;
+        this.loginCodeExpiresAt = null;
+    }
 }

@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public class UserRepositoryImpl implements UserRepository {
 
+    private static final int MIN_PHONE_DIGITS = 9;
+
     private final UserPersistenceRepository userPersistenceRepository;
 
     public UserRepositoryImpl(UserPersistenceRepository userPersistenceRepository) {
@@ -29,6 +31,21 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByPhone(String phone) {
+        var digits = digitsOf(phone);
+        if (digits.length() < MIN_PHONE_DIGITS) return Optional.empty();
+        return userPersistenceRepository.findAll().stream()
+                .filter(entity -> samePhone(digits, digitsOf(entity.getPhone())))
+                .findFirst()
+                .map(UserPersistenceAssembler::toDomainFromPersistence);
+    }
+
+    private static boolean samePhone(String a, String b) {
+        if (b.length() < MIN_PHONE_DIGITS) return false;
+        return a.length() >= b.length() ? a.endsWith(b) : b.endsWith(a);
+    }
+
+    @Override
     public List<User> findAll() {
         return userPersistenceRepository.findAll().stream().map(UserPersistenceAssembler::toDomainFromPersistence).toList();
     }
@@ -42,5 +59,9 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return userPersistenceRepository.existsByEmail(email);
+    }
+
+    private static String digitsOf(String value) {
+        return value == null ? "" : value.replaceAll("\\D", "");
     }
 }

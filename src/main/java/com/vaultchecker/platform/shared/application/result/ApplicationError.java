@@ -40,6 +40,13 @@ public record ApplicationError(
                 reason);
     }
 
+    public static ApplicationError serviceUnavailable(String service, String reason) {
+        return new ApplicationError(
+                "SERVICE_UNAVAILABLE",
+                "Service unavailable: %s".formatted(service),
+                reason);
+    }
+
     public static ApplicationError unexpected(String context, String reason) {
         return new ApplicationError(
                 "UNEXPECTED_ERROR",

@@ -1,14 +1,24 @@
 package com.vaultchecker.platform.iam.interfaces.rest;
 
 import com.vaultchecker.platform.iam.application.commandservices.UserCommandService;
-import com.vaultchecker.platform.iam.interfaces.rest.resources.AuthenticatedUserResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordRecoveryResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordResetResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.PhoneLoginCodeRequestResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.PhoneLoginCodeResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.PhoneSignInResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignInResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignUpResource;
-import com.vaultchecker.platform.iam.interfaces.rest.resources.UserResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.VerifyEmailResource;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.AuthenticatedUserResourceFromEntityAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.RequestPasswordRecoveryCommandFromResourceAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.RequestPhoneLoginCodeCommandFromResourceAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.ResetPasswordCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInCommandFromResourceAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInWithPhoneCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignUpCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.VerifyEmailCommandFromResourceAssembler;
+import com.vaultchecker.platform.shared.interfaces.rest.resources.MessageResource;
 import com.vaultchecker.platform.shared.interfaces.rest.transform.ResponseEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,7 +54,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/sign-up")
-    @Operation(summary = "User registration", description = "Creates a new user account with the provided credentials and role.")
+    @Operation(summary = "User registration", description = "Creates a new user account with the provided credentials and role, and emails a verification link.")
     public ResponseEntity<?> signUp(@Valid @RequestBody SignUpResource signUpResource) {
         var signUpCommand = SignUpCommandFromResourceAssembler.toCommandFromResource(signUpResource);
         var result = userCommandService.handle(signUpCommand);
@@ -52,6 +62,61 @@ public class AuthenticationController {
                 result,
                 UserResourceFromEntityAssembler::toResourceFromEntity,
                 HttpStatus.CREATED
+        );
+    }
+
+    @PostMapping("/verify-email")
+    @Operation(summary = "Verify email", description = "Marks the email as verified using the token from the verification link.")
+    public ResponseEntity<?> verifyEmail(@Valid @RequestBody VerifyEmailResource resource) {
+        var result = userCommandService.handle(VerifyEmailCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                UserResourceFromEntityAssembler::toResourceFromEntity,
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/password-recovery")
+    @Operation(summary = "Request password recovery", description = "Emails a one-time recovery code valid for 15 minutes.")
+    public ResponseEntity<?> requestPasswordRecovery(@Valid @RequestBody PasswordRecoveryResource resource) {
+        var result = userCommandService.handle(RequestPasswordRecoveryCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                user -> new MessageResource("Recovery code sent"),
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/password-reset")
+    @Operation(summary = "Reset password", description = "Sets a new password using the emailed recovery code.")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetResource resource) {
+        var result = userCommandService.handle(ResetPasswordCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                user -> new MessageResource("Password updated"),
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/phone-code")
+    @Operation(summary = "Request phone sign-in code", description = "Issues a one-time sign-in code valid for 5 minutes. With no SMS provider configured, the code is returned in the response (demo mode).")
+    public ResponseEntity<?> requestPhoneLoginCode(@Valid @RequestBody PhoneLoginCodeRequestResource resource) {
+        var result = userCommandService.handle(RequestPhoneLoginCodeCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                PhoneLoginCodeResource::new,
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/phone-sign-in")
+    @Operation(summary = "Phone sign-in", description = "Authenticates with a phone number and its one-time code and returns a JWT token.")
+    public ResponseEntity<?> signInWithPhone(@Valid @RequestBody PhoneSignInResource resource) {
+        var result = userCommandService.handle(SignInWithPhoneCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                auth -> AuthenticatedUserResourceFromEntityAssembler.toResourceFromEntity(auth.getLeft(), auth.getRight()),
+                HttpStatus.OK
         );
     }
 }

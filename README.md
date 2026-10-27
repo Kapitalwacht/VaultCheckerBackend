@@ -145,6 +145,23 @@ DATABASE_URL=jdbc:postgresql://localhost:5432/vaultchecker?user=postgres&passwor
 JWT_SECRET=your-strong-random-secret
 ```
 
+Optional variables for account emails (verification link and password recovery code), sent through
+the EmailJS REST API. While they are empty, sign-up still works but no email is sent, and password
+recovery and email changes answer `503 SERVICE_UNAVAILABLE`:
+
+```properties
+FRONTEND_BASE_URL=https://vaultchecker-frontend.web.app
+EMAILJS_SERVICE_ID=
+EMAILJS_PUBLIC_KEY=
+EMAILJS_PRIVATE_KEY=
+EMAILJS_VERIFICATION_TEMPLATE_ID=
+EMAILJS_RECOVERY_TEMPLATE_ID=
+```
+
+EmailJS only accepts server-side calls when **Account → Security → "Allow EmailJS API for
+non-browser applications"** is enabled. The verification template receives `{{to_email}}`,
+`{{name}}` and `{{link}}`; the recovery template receives `{{to_email}}`, `{{name}}` and `{{code}}`.
+
 ---
 
 ## Running locally
