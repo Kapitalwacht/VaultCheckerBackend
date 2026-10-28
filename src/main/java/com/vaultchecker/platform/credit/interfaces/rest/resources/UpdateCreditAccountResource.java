@@ -11,7 +11,6 @@ public record UpdateCreditAccountResource(
         @Size(max = 60) String customerId,
         BigDecimal balance,
         BigDecimal creditLimit,
-        LocalDate dueDate,
-        @Size(max = 20) String state
+        LocalDate dueDate
 ) {
 }

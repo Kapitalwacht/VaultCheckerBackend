@@ -18,7 +18,6 @@ public final class CreditAccountPersistenceAssembler {
         account.setBalance(entity.getBalance());
         account.setCreditLimit(entity.getCreditLimit());
         account.setDueDate(entity.getDueDate());
-        account.setState(entity.getState());
         return account;
     }
 

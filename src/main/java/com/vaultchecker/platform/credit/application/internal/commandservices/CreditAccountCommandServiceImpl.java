@@ -25,6 +25,9 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
         }
         var account = new CreditAccount(command.creditId(), command.storeId(), command.customerId(),
                 command.balance(), command.creditLimit(), command.dueDate());
+        if (account.exceedsLimit()) {
+            return Result.failure(ApplicationError.validationError("balance", "Balance exceeds the credit limit"));
+        }
         return Result.success(creditAccountRepository.save(account));
     }
 
@@ -41,8 +44,8 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
         account.setBalance(command.balance());
         account.setCreditLimit(command.creditLimit());
         account.setDueDate(command.dueDate());
-        if (command.state() != null && !command.state().isBlank()) {
-            account.setState(command.state());
+        if (account.exceedsLimit()) {
+            return Result.failure(ApplicationError.validationError("balance", "Balance exceeds the credit limit"));
         }
         return Result.success(creditAccountRepository.save(account));
     }

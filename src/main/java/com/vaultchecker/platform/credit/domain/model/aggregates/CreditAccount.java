@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Getter
 public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
@@ -24,16 +25,14 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
     private BigDecimal creditLimit;
     @Setter
     private LocalDate dueDate;
-    @Setter
-    private String state;
 
     public static final String CURRENT = "current";
     public static final String OVERDUE = "overdue";
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Lima");
 
     public CreditAccount() {
         this.balance = BigDecimal.ZERO;
         this.creditLimit = BigDecimal.ZERO;
-        this.state = CURRENT;
     }
 
     public CreditAccount(String creditId, String storeId, String customerId, BigDecimal balance,
@@ -44,7 +43,6 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
         this.balance = balance != null ? balance : BigDecimal.ZERO;
         this.creditLimit = creditLimit != null ? creditLimit : BigDecimal.ZERO;
         this.dueDate = dueDate;
-        this.state = CURRENT;
     }
 
     public BigDecimal availableCredit() {
@@ -64,7 +62,15 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
         this.balance = this.balance.subtract(amount).max(BigDecimal.ZERO);
     }
 
+    public boolean exceedsLimit() {
+        return balance.compareTo(creditLimit) > 0;
+    }
+
+    public String getState() {
+        return isOverdue() ? OVERDUE : CURRENT;
+    }
+
     public boolean isOverdue() {
-        return OVERDUE.equalsIgnoreCase(this.state);
+        return balance.signum() > 0 && dueDate != null && dueDate.isBefore(LocalDate.now(BUSINESS_ZONE));
     }
 }

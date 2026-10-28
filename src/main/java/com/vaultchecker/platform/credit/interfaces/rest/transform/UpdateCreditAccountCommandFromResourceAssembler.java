@@ -6,6 +6,6 @@ import com.vaultchecker.platform.credit.interfaces.rest.resources.UpdateCreditAc
 public class UpdateCreditAccountCommandFromResourceAssembler {
     public static UpdateCreditAccountCommand toCommandFromResource(Long id, UpdateCreditAccountResource resource) {
         return new UpdateCreditAccountCommand(id, resource.creditId(), resource.storeId(), resource.customerId(),
-                resource.balance(), resource.creditLimit(), resource.dueDate(), resource.state());
+                resource.balance(), resource.creditLimit(), resource.dueDate());
     }
 }
