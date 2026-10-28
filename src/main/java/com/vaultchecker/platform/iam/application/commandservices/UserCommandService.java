@@ -7,6 +7,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.RequestPasswordRecove
 import com.vaultchecker.platform.iam.domain.model.commands.RequestPhoneLoginCodeCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ResetPasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.SignInWithGoogleCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInWithPhoneCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.UpdateProfileCommand;
@@ -30,6 +31,8 @@ public interface UserCommandService {
     Result<String, ApplicationError> handle(RequestPhoneLoginCodeCommand command);
 
     Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithPhoneCommand command);
+
+    Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithGoogleCommand command);
 
     Result<User, ApplicationError> handle(UpdateProfileCommand command);
 

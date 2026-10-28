@@ -1,6 +1,7 @@
 package com.vaultchecker.platform.iam.interfaces.rest;
 
 import com.vaultchecker.platform.iam.application.commandservices.UserCommandService;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.GoogleSignInResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordRecoveryResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordResetResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PhoneLoginCodeRequestResource;
@@ -14,6 +15,7 @@ import com.vaultchecker.platform.iam.interfaces.rest.transform.RequestPasswordRe
 import com.vaultchecker.platform.iam.interfaces.rest.transform.RequestPhoneLoginCodeCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.ResetPasswordCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInCommandFromResourceAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInWithGoogleCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInWithPhoneCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignUpCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
@@ -113,6 +115,17 @@ public class AuthenticationController {
     @Operation(summary = "Phone sign-in", description = "Authenticates with a phone number and its one-time code and returns a JWT token.")
     public ResponseEntity<?> signInWithPhone(@Valid @RequestBody PhoneSignInResource resource) {
         var result = userCommandService.handle(SignInWithPhoneCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                auth -> AuthenticatedUserResourceFromEntityAssembler.toResourceFromEntity(auth.getLeft(), auth.getRight()),
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/google-sign-in")
+    @Operation(summary = "Google sign-in", description = "Verifies a Google OAuth access token issued to the VaultChecker client and returns a JWT token for the account with that email.")
+    public ResponseEntity<?> signInWithGoogle(@Valid @RequestBody GoogleSignInResource resource) {
+        var result = userCommandService.handle(SignInWithGoogleCommandFromResourceAssembler.toCommandFromResource(resource));
         return ResponseEntityAssembler.toResponseEntityFromResult(
                 result,
                 auth -> AuthenticatedUserResourceFromEntityAssembler.toResourceFromEntity(auth.getLeft(), auth.getRight()),

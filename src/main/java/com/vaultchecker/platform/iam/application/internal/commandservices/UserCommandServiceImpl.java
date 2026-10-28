@@ -2,6 +2,7 @@ package com.vaultchecker.platform.iam.application.internal.commandservices;
 
 import com.vaultchecker.platform.iam.application.commandservices.UserCommandService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.hashing.HashingService;
+import com.vaultchecker.platform.iam.application.internal.outboundservices.identity.GoogleIdentityService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.notifications.NotificationService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.tokens.TokenService;
 import com.vaultchecker.platform.iam.domain.model.aggregates.User;
@@ -11,6 +12,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.RequestPasswordRecove
 import com.vaultchecker.platform.iam.domain.model.commands.RequestPhoneLoginCodeCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ResetPasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.SignInWithGoogleCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInWithPhoneCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.UpdateProfileCommand;
@@ -47,6 +49,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final RoleRepository roleRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationService notificationService;
+    private final GoogleIdentityService googleIdentityService;
     private final String frontendBaseUrl;
     private final SecureRandom random = new SecureRandom();
 
@@ -57,6 +60,7 @@ public class UserCommandServiceImpl implements UserCommandService {
             RoleRepository roleRepository,
             ApplicationEventPublisher eventPublisher,
             NotificationService notificationService,
+            GoogleIdentityService googleIdentityService,
             @Value("${frontend.base-url}") String frontendBaseUrl) {
         this.userRepository = userRepository;
         this.hashingService = hashingService;
@@ -64,6 +68,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         this.roleRepository = roleRepository;
         this.eventPublisher = eventPublisher;
         this.notificationService = notificationService;
+        this.googleIdentityService = googleIdentityService;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -156,6 +161,20 @@ public class UserCommandServiceImpl implements UserCommandService {
         user.get().issueLoginCode(code, expiryAfter(LOGIN_CODE_TTL));
         userRepository.save(user.get());
         return Result.success(code);
+    }
+
+    @Override
+    public Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithGoogleCommand command) {
+        var email = googleIdentityService.verifiedEmail(command.accessToken());
+        if (email.isEmpty()) {
+            return Result.failure(ApplicationError.validationError("googleToken", "Invalid Google access token"));
+        }
+        var user = userRepository.findByEmail(email.get());
+        if (user.isEmpty()) {
+            return Result.failure(ApplicationError.notFound("User", email.get()));
+        }
+        var token = tokenService.generateToken(user.get().getEmail());
+        return Result.success(ImmutablePair.of(user.get(), token));
     }
 
     @Override
