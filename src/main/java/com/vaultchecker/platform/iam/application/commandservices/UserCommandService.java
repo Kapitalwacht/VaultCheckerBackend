@@ -12,6 +12,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.SignInWithPhoneComman
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.UpdateProfileCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.VerifyEmailCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.VerifyRecoveryCodeCommand;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -25,6 +26,8 @@ public interface UserCommandService {
     Result<User, ApplicationError> handle(VerifyEmailCommand command);
 
     Result<User, ApplicationError> handle(RequestPasswordRecoveryCommand command);
+
+    Result<User, ApplicationError> handle(VerifyRecoveryCodeCommand command);
 
     Result<User, ApplicationError> handle(ResetPasswordCommand command);
 

@@ -7,6 +7,7 @@ import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordResetReso
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PhoneLoginCodeRequestResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PhoneLoginCodeResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PhoneSignInResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.RecoveryCodeVerificationResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignInResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignUpResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.VerifyEmailResource;
@@ -20,6 +21,7 @@ import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInWithPhoneCo
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignUpCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.VerifyEmailCommandFromResourceAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.VerifyRecoveryCodeCommandFromResourceAssembler;
 import com.vaultchecker.platform.shared.interfaces.rest.resources.MessageResource;
 import com.vaultchecker.platform.shared.interfaces.rest.transform.ResponseEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -85,6 +87,17 @@ public class AuthenticationController {
         return ResponseEntityAssembler.toResponseEntityFromResult(
                 result,
                 user -> new MessageResource("Recovery code sent"),
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/password-recovery/verify")
+    @Operation(summary = "Verify recovery code", description = "Checks that the emailed recovery code is valid and not expired, without changing the password.")
+    public ResponseEntity<?> verifyRecoveryCode(@Valid @RequestBody RecoveryCodeVerificationResource resource) {
+        var result = userCommandService.handle(VerifyRecoveryCodeCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                user -> new MessageResource("Recovery code verified"),
                 HttpStatus.OK
         );
     }

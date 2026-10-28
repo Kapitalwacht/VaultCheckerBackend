@@ -17,6 +17,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.SignInWithPhoneComman
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.UpdateProfileCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.VerifyEmailCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.VerifyRecoveryCodeCommand;
 import com.vaultchecker.platform.iam.domain.model.entities.Role;
 import com.vaultchecker.platform.iam.domain.model.events.UserSignedUpEvent;
 import com.vaultchecker.platform.iam.domain.model.valueobjects.RoleNameMapper;
@@ -136,6 +137,18 @@ public class UserCommandServiceImpl implements UserCommandService {
             return Result.failure(ApplicationError.serviceUnavailable("email", "Recovery email could not be sent"));
         }
         return Result.success(saved);
+    }
+
+    @Override
+    public Result<User, ApplicationError> handle(VerifyRecoveryCodeCommand command) {
+        var user = userRepository.findByEmail(command.email());
+        if (user.isEmpty() || !user.get().hasRecoveryCode(command.code().trim())) {
+            return Result.failure(ApplicationError.validationError("code", "Invalid recovery code"));
+        }
+        if (user.get().isRecoveryCodeExpired(System.currentTimeMillis())) {
+            return Result.failure(ApplicationError.businessRuleViolation("code-expired", "Recovery code expired"));
+        }
+        return Result.success(user.get());
     }
 
     @Override
