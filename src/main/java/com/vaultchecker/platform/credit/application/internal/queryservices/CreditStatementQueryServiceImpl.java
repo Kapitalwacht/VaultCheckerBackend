@@ -54,7 +54,7 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
             return Optional.empty();
         }
 
-        var asOf = query.asOfDate() != null ? query.asOfDate() : LocalDate.now();
+        var asOf = query.asOfDate() != null ? query.asOfDate() : LocalDate.now(CreditAccount.BUSINESS_ZONE);
         var effectiveRate = customer == null ? BigDecimal.ZERO : CreditCycle.effectiveAnnualRate(
                 customer.getRateType(), customer.getRateValue(),
                 customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
@@ -90,7 +90,7 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
                 customerId,
                 account.getStoreId(),
                 account.getDueDate(),
-                account.getState(),
+                account.stateOn(asOf),
                 lines,
                 InterestCalculator.scaleMoney(principal),
                 InterestCalculator.scaleMoney(totalCompensatory),
@@ -99,7 +99,7 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
     }
 
     private BigDecimal moratoryInterest(CreditAccount account, BigDecimal moratoryRate, LocalDate asOf) {
-        if (!account.isOverdue() || account.getDueDate() == null || !account.getDueDate().isBefore(asOf)) {
+        if (!account.isOverdueOn(asOf)) {
             return BigDecimal.ZERO;
         }
         int daysLate = (int) Math.max(0, ChronoUnit.DAYS.between(account.getDueDate(), asOf));

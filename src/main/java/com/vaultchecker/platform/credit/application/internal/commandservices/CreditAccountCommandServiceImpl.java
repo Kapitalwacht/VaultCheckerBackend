@@ -41,8 +41,12 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
         account.setCreditId(command.creditId());
         account.setStoreId(command.storeId());
         account.setCustomerId(command.customerId());
-        account.setBalance(command.balance());
-        account.setCreditLimit(command.creditLimit());
+        if (command.balance() != null) {
+            account.setBalance(command.balance());
+        }
+        if (command.creditLimit() != null) {
+            account.setCreditLimit(command.creditLimit());
+        }
         account.setDueDate(command.dueDate());
         if (account.exceedsLimit()) {
             return Result.failure(ApplicationError.validationError("balance", "Balance exceeds the credit limit"));

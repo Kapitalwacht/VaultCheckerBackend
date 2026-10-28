@@ -28,7 +28,7 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
 
     public static final String CURRENT = "current";
     public static final String OVERDUE = "overdue";
-    private static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Lima");
+    public static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Lima");
 
     public CreditAccount() {
         this.balance = BigDecimal.ZERO;
@@ -70,7 +70,15 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
         return isOverdue() ? OVERDUE : CURRENT;
     }
 
+    public String stateOn(LocalDate date) {
+        return isOverdueOn(date) ? OVERDUE : CURRENT;
+    }
+
     public boolean isOverdue() {
-        return balance.signum() > 0 && dueDate != null && dueDate.isBefore(LocalDate.now(BUSINESS_ZONE));
+        return isOverdueOn(LocalDate.now(BUSINESS_ZONE));
+    }
+
+    public boolean isOverdueOn(LocalDate date) {
+        return balance.signum() > 0 && dueDate != null && dueDate.isBefore(date);
     }
 }
