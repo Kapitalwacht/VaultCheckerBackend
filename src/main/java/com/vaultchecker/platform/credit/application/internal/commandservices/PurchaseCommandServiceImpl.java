@@ -10,7 +10,6 @@ import com.vaultchecker.platform.credit.domain.repositories.CreditAccountReposit
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
 import com.vaultchecker.platform.credit.domain.services.CreditCycle;
-import com.vaultchecker.platform.credit.domain.services.FinanceConstants;
 import com.vaultchecker.platform.credit.domain.services.FrenchAmortizationCalculator;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
 import com.vaultchecker.platform.catalog.domain.repositories.ProductRepository;
@@ -32,17 +31,20 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
     private final InstallmentPaymentRepository installmentPaymentRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final PendingDebtService pendingDebtService;
 
     public PurchaseCommandServiceImpl(PurchaseRepository purchaseRepository,
                                       CreditAccountRepository creditAccountRepository,
                                       InstallmentPaymentRepository installmentPaymentRepository,
                                       CustomerRepository customerRepository,
-                                      ProductRepository productRepository) {
+                                      ProductRepository productRepository,
+                                      PendingDebtService pendingDebtService) {
         this.purchaseRepository = purchaseRepository;
         this.creditAccountRepository = creditAccountRepository;
         this.installmentPaymentRepository = installmentPaymentRepository;
         this.customerRepository = customerRepository;
         this.productRepository = productRepository;
+        this.pendingDebtService = pendingDebtService;
     }
 
     @Override
@@ -50,16 +52,25 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         if (command.amount() == null || command.amount().signum() <= 0) {
             return Result.failure(ApplicationError.validationError("amount", "Purchase amount must be positive"));
         }
-        int requestedMonths = command.months() == null ? 1 : command.months();
-        if (!productAllowsMonths(command.productId(), requestedMonths)) {
+        var customer = customerRepository.findByReference(command.customerId()).orElse(null);
+        if (customer == null) {
+            return Result.failure(ApplicationError.notFound("Customer", String.valueOf(command.customerId())));
+        }
+        int months = command.months() == null ? 1 : command.months();
+        if (customer.getMaxMonths() != null && months > customer.getMaxMonths()) {
+            return Result.failure(ApplicationError.validationError(
+                    "months", "The customer only allows up to %d month(s)".formatted(customer.getMaxMonths())));
+        }
+        if (!productAllowsMonths(command.productId(), months)) {
             return Result.failure(ApplicationError.conflict(
-                    "PaymentMode", "The product's payment mode does not allow %d month(s)".formatted(requestedMonths)));
+                    "PaymentMode", "The product's payment mode does not allow %d month(s)".formatted(months)));
         }
 
         var account = creditAccountRepository.findAllByCustomerId(command.customerId()).stream()
-                .findFirst().orElse(null);
+                .findFirst()
+                .orElseGet(() -> openAccount(command, customer));
 
-        if (account != null && account.wouldExceedLimit(command.amount())) {
+        if (account.wouldExceedLimit(command.amount())) {
             return Result.failure(ApplicationError.businessRuleViolation(
                     "credit-limit",
                     "Purchase of %s exceeds available credit (balance %s, limit %s)".formatted(
@@ -71,26 +82,29 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
                 command.purchaseDate(), command.months(), command.state());
         var savedPurchase = purchaseRepository.save(purchase);
 
-        if (account != null) {
-            int months = command.months() == null ? 1 : command.months();
-            if (months <= 1) {
-                account.addCharge(command.amount());
-            } else {
-                generateInstallmentSchedule(command, account, months);
-            }
-            creditAccountRepository.save(account);
+        if (months <= 1) {
+            account.addCharge(command.amount());
+        } else {
+            generateInstallmentSchedule(command, customer, account, months);
         }
+        pendingDebtService.refreshDueDate(account);
+        creditAccountRepository.save(account);
 
         return Result.success(savedPurchase);
     }
 
-    private void generateInstallmentSchedule(RegisterPurchaseCommand command, CreditAccount account, int months) {
-        var customer = findCustomer(command.customerId());
-        var effectiveAnnualRate = customer == null ? BigDecimal.ZERO : CreditCycle.effectiveAnnualRate(
+    private CreditAccount openAccount(RegisterPurchaseCommand command, Customer customer) {
+        return new CreditAccount("CRD-%s".formatted(command.purchaseId()), command.storeId(), command.customerId(),
+                BigDecimal.ZERO, customer.getCreditLimit(), null);
+    }
+
+    private void generateInstallmentSchedule(RegisterPurchaseCommand command, Customer customer,
+                                             CreditAccount account, int months) {
+        var effectiveAnnualRate = CreditCycle.effectiveAnnualRate(
                 customer.getRateType(), customer.getRateValue(),
                 customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
-        int cutoffDay = customer != null && customer.getCutoffDay() != null ? customer.getCutoffDay() : FinanceConstants.DEFAULT_CUTOFF_DAY;
-        int paymentDay = customer != null && customer.getPaymentDay() != null ? customer.getPaymentDay() : FinanceConstants.DEFAULT_PAYMENT_DAY;
+        int cutoffDay = CreditCycle.cutoffDayOf(customer.getCutoffDay());
+        int paymentDay = CreditCycle.paymentDayOf(customer.getPaymentDay());
 
         var purchaseDate = command.purchaseDate() != null ? command.purchaseDate() : LocalDate.now();
         var graceEnd = CreditCycle.graceEndDate(purchaseDate, cutoffDay, paymentDay);
@@ -105,7 +119,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
             installment.setPurchaseId(command.purchaseId());
             installment.setPeriod(row.number());
 
-            installment.setScheduledDate(graceEnd.plusMonths(row.number()));
+            installment.setScheduledDate(CreditCycle.installmentDate(graceEnd, row.number(), paymentDay));
             installment.setPaidDate(null);
             installment.setInstallment(row.payment());
             installment.setLateFee(BigDecimal.ZERO);
@@ -117,16 +131,11 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         }
 
         account.addCharge(InterestCalculator.capitalizeForGrace(command.amount(), effectiveAnnualRate, graceDays));
-        account.setDueDate(graceEnd.plusMonths(1));
     }
 
     private boolean productAllowsMonths(String productId, int months) {
         return productRepository.findByReference(productId)
                 .map(product -> product.allowsMonths(months))
                 .orElse(true);
-    }
-
-    private Customer findCustomer(String customerId) {
-        return customerRepository.findByReference(customerId).orElse(null);
     }
 }

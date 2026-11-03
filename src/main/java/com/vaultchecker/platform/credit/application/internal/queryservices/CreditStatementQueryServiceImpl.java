@@ -9,7 +9,6 @@ import com.vaultchecker.platform.credit.domain.repositories.CreditAccountReposit
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
 import com.vaultchecker.platform.credit.domain.services.CreditCycle;
-import com.vaultchecker.platform.credit.domain.services.FinanceConstants;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
 import org.springframework.stereotype.Service;
@@ -54,8 +53,8 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
         var account = creditAccountRepository.findAllByCustomerId(customerId).stream().findFirst().orElse(null);
 
         var cutoffDate = query.asOfDate() != null ? query.asOfDate() : LocalDate.now();
-        int cutoffDay = customer.getCutoffDay() != null ? customer.getCutoffDay() : FinanceConstants.DEFAULT_CUTOFF_DAY;
-        int paymentDay = customer.getPaymentDay() != null ? customer.getPaymentDay() : FinanceConstants.DEFAULT_PAYMENT_DAY;
+        int cutoffDay = CreditCycle.cutoffDayOf(customer.getCutoffDay());
+        int paymentDay = CreditCycle.paymentDayOf(customer.getPaymentDay());
         var paymentDate = CreditCycle.graceEndDate(cutoffDate, cutoffDay, paymentDay);
 
         var compensatoryRate = CreditCycle.effectiveAnnualRate(

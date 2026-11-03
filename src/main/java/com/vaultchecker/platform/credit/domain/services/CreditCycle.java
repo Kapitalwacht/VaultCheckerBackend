@@ -24,13 +24,25 @@ public final class CreditCycle {
         return InterestCalculator.toEffectiveAnnual(rateValue, type, compoundingsPerYear);
     }
 
+    public static int cutoffDayOf(Integer cutoffDay) {
+        return cutoffDay != null ? cutoffDay : FinanceConstants.DEFAULT_CUTOFF_DAY;
+    }
+
+    public static int paymentDayOf(Integer paymentDay) {
+        return paymentDay != null ? paymentDay : FinanceConstants.DEFAULT_PAYMENT_DAY;
+    }
+
     public static LocalDate graceEndDate(LocalDate purchaseDate, int cutoffDay, int paymentDay) {
-        var base = purchaseDate.getDayOfMonth() <= cutoffDay ? purchaseDate : purchaseDate.plusMonths(1);
-        var anchor = atDay(base, paymentDay);
-        if (!anchor.isAfter(purchaseDate)) {
-            anchor = atDay(base.plusMonths(1), paymentDay);
+        var cutoff = atDay(purchaseDate, cutoffDay);
+        if (purchaseDate.isAfter(cutoff)) {
+            cutoff = atDay(purchaseDate.plusMonths(1), cutoffDay);
         }
-        return anchor;
+        var payment = atDay(cutoff, paymentDay);
+        return payment.isAfter(cutoff) ? payment : atDay(cutoff.plusMonths(1), paymentDay);
+    }
+
+    public static LocalDate installmentDate(LocalDate firstPaymentDate, int period, int paymentDay) {
+        return atDay(firstPaymentDate.plusMonths(period), paymentDay);
     }
 
     public static int graceDays(LocalDate purchaseDate, int cutoffDay, int paymentDay) {

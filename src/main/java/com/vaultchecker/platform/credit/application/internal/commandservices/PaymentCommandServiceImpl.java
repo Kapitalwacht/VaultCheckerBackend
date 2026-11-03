@@ -30,13 +30,16 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
     private final PaymentRepository paymentRepository;
     private final CustomerRepository customerRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PendingDebtService pendingDebtService;
 
     public PaymentCommandServiceImpl(CreditAccountRepository creditAccountRepository, PaymentRepository paymentRepository,
-                                     CustomerRepository customerRepository, ApplicationEventPublisher eventPublisher) {
+                                     CustomerRepository customerRepository, ApplicationEventPublisher eventPublisher,
+                                     PendingDebtService pendingDebtService) {
         this.creditAccountRepository = creditAccountRepository;
         this.paymentRepository = paymentRepository;
         this.customerRepository = customerRepository;
         this.eventPublisher = eventPublisher;
+        this.pendingDebtService = pendingDebtService;
     }
 
     @Override
@@ -49,6 +52,10 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
             return Result.failure(ApplicationError.notFound("CreditAccount", String.valueOf(command.creditAccountId())));
         }
         var account = accountOpt.get();
+        if (!pendingDebtService.pendingDueDates(account.getCustomerId()).isEmpty()) {
+            return Result.failure(ApplicationError.conflict(
+                    "PendingPurchases", "Pending purchases are paid one by one from the payment plan"));
+        }
         var paymentDate = command.date() != null ? command.date() : LocalDate.now();
 
         int daysLate = daysLate(account, paymentDate);
