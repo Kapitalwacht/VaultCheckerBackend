@@ -7,20 +7,35 @@ import java.util.List;
 public record CreditStatementResource(
         String customerId,
         String storeId,
-        LocalDate dueDate,
-        String state,
+        LocalDate cutoffDate,
+        LocalDate paymentDate,
         List<LineResource> lines,
+        List<LateFeeResource> lateFees,
+        BigDecimal totalInterest,
         BigDecimal totalPrincipal,
-        BigDecimal totalCompensatoryInterest,
-        BigDecimal moratoryInterest,
+        BigDecimal totalLateFee,
         BigDecimal totalToPay) {
 
     public record LineResource(
             String purchaseId,
             String description,
             LocalDate purchaseDate,
-            BigDecimal amount,
-            Integer compensatoryDays,
-            BigDecimal compensatoryInterest) {
+            Integer months,
+            Integer period,
+            LocalDate dueDate,
+            BigDecimal interest,
+            BigDecimal principal,
+            BigDecimal total) {
+    }
+
+    public record LateFeeResource(
+            String purchaseId,
+            String description,
+            Integer period,
+            LocalDate dueDate,
+            Integer daysLate,
+            BigDecimal overdueAmount,
+            BigDecimal rate,
+            BigDecimal amount) {
     }
 }

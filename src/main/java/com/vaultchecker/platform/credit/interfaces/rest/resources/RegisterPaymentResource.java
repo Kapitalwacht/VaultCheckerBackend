@@ -10,7 +10,6 @@ public record RegisterPaymentResource(
         String storeId,
         @NotNull BigDecimal amount,
         LocalDate date,
-        BigDecimal lateInterestDue,
         BigDecimal compensatoryInterestDue
 ) {
 }

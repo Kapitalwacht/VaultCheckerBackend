@@ -6,6 +6,6 @@ import com.vaultchecker.platform.credit.interfaces.rest.resources.RegisterPaymen
 public class RegisterPaymentCommandFromResourceAssembler {
     public static RegisterPaymentCommand toCommandFromResource(RegisterPaymentResource resource) {
         return new RegisterPaymentCommand(resource.creditAccountId(), resource.storeId(), resource.amount(),
-                resource.date(), resource.lateInterestDue(), resource.compensatoryInterestDue());
+                resource.date(), resource.compensatoryInterestDue());
     }
 }

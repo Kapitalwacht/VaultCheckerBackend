@@ -12,6 +12,7 @@ import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
 import com.vaultchecker.platform.credit.domain.services.CreditCycle;
 import com.vaultchecker.platform.credit.domain.services.FrenchAmortizationCalculator;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
+import com.vaultchecker.platform.catalog.domain.repositories.ProductRepository;
 import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
@@ -31,21 +32,29 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
     private final CreditAccountRepository creditAccountRepository;
     private final InstallmentPaymentRepository installmentPaymentRepository;
     private final CustomerRepository customerRepository;
+    private final ProductRepository productRepository;
 
     public PurchaseCommandServiceImpl(PurchaseRepository purchaseRepository,
                                       CreditAccountRepository creditAccountRepository,
                                       InstallmentPaymentRepository installmentPaymentRepository,
-                                      CustomerRepository customerRepository) {
+                                      CustomerRepository customerRepository,
+                                      ProductRepository productRepository) {
         this.purchaseRepository = purchaseRepository;
         this.creditAccountRepository = creditAccountRepository;
         this.installmentPaymentRepository = installmentPaymentRepository;
         this.customerRepository = customerRepository;
+        this.productRepository = productRepository;
     }
 
     @Override
     public Result<Purchase, ApplicationError> handle(RegisterPurchaseCommand command) {
         if (command.amount() == null || command.amount().signum() <= 0) {
             return Result.failure(ApplicationError.validationError("amount", "Purchase amount must be positive"));
+        }
+        int requestedMonths = command.months() == null ? 1 : command.months();
+        if (!productAllowsMonths(command.productId(), requestedMonths)) {
+            return Result.failure(ApplicationError.businessRuleViolation(
+                    "payment-mode", "The product's payment mode does not allow %d month(s)".formatted(requestedMonths)));
         }
 
         var account = creditAccountRepository.findAllByCustomerId(command.customerId()).stream()
@@ -110,6 +119,17 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
 
         account.addCharge(InterestCalculator.capitalizeForGrace(command.amount(), effectiveAnnualRate, graceDays));
         account.setDueDate(graceEnd.plusMonths(1));
+    }
+
+    private boolean productAllowsMonths(String productId, int months) {
+        if (productId == null || productId.isBlank()) {
+            return true;
+        }
+        return productRepository.findAll().stream()
+                .filter(p -> productId.equals(p.getProductId()) || productId.equals(String.valueOf(p.getId())))
+                .findFirst()
+                .map(p -> p.allowsMonths(months))
+                .orElse(true);
     }
 
     private Customer findCustomer(String customerId) {

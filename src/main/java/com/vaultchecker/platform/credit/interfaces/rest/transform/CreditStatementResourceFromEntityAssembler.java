@@ -7,18 +7,24 @@ public class CreditStatementResourceFromEntityAssembler {
     public static CreditStatementResource toResourceFromEntity(CreditStatement statement) {
         var lines = statement.lines().stream()
                 .map(line -> new CreditStatementResource.LineResource(
-                        line.purchaseId(), line.description(), line.purchaseDate(),
-                        line.amount(), line.compensatoryDays(), line.compensatoryInterest()))
+                        line.purchaseId(), line.description(), line.purchaseDate(), line.months(), line.period(),
+                        line.dueDate(), line.interest(), line.principal(), line.total()))
+                .toList();
+        var lateFees = statement.lateFees().stream()
+                .map(fee -> new CreditStatementResource.LateFeeResource(
+                        fee.purchaseId(), fee.description(), fee.period(), fee.dueDate(), fee.daysLate(),
+                        fee.overdueAmount(), fee.rate(), fee.amount()))
                 .toList();
         return new CreditStatementResource(
                 statement.customerId(),
                 statement.storeId(),
-                statement.dueDate(),
-                statement.state(),
+                statement.cutoffDate(),
+                statement.paymentDate(),
                 lines,
+                lateFees,
+                statement.totalInterest(),
                 statement.totalPrincipal(),
-                statement.totalCompensatoryInterest(),
-                statement.moratoryInterest(),
+                statement.totalLateFee(),
                 statement.totalToPay());
     }
 }

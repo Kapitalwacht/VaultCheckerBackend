@@ -7,15 +7,21 @@ import com.vaultchecker.platform.credit.domain.model.commands.UpdateCreditAccoun
 import com.vaultchecker.platform.credit.domain.repositories.CreditAccountRepository;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
+import com.vaultchecker.platform.shared.domain.model.events.AuditableActionRegisteredEvent;
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserRole;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CreditAccountCommandServiceImpl implements CreditAccountCommandService {
 
     private final CreditAccountRepository creditAccountRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public CreditAccountCommandServiceImpl(CreditAccountRepository creditAccountRepository) {
+    public CreditAccountCommandServiceImpl(CreditAccountRepository creditAccountRepository,
+                                           ApplicationEventPublisher eventPublisher) {
         this.creditAccountRepository = creditAccountRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -28,7 +34,13 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
         if (account.exceedsLimit()) {
             return Result.failure(ApplicationError.validationError("balance", "Balance exceeds the credit limit"));
         }
-        return Result.success(creditAccountRepository.save(account));
+        var saved = creditAccountRepository.save(account);
+        eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
+                CurrentUserRole.clientRole(),
+                "OPEN_CREDIT_ACCOUNT",
+                "Credit account %d opened for customer %s with limit %s".formatted(
+                        saved.getId(), saved.getCustomerId(), saved.getCreditLimit())));
+        return Result.success(saved);
     }
 
     @Override
