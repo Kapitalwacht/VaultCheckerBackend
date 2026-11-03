@@ -4,11 +4,9 @@ import com.vaultchecker.platform.iam.domain.model.aggregates.User;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangeEmailCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangePasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.RequestPasswordRecoveryCommand;
-import com.vaultchecker.platform.iam.domain.model.commands.RequestPhoneLoginCodeCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ResetPasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInWithGoogleCommand;
-import com.vaultchecker.platform.iam.domain.model.commands.SignInWithPhoneCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.UpdateProfileCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.VerifyEmailCommand;
@@ -30,10 +28,6 @@ public interface UserCommandService {
     Result<User, ApplicationError> handle(VerifyRecoveryCodeCommand command);
 
     Result<User, ApplicationError> handle(ResetPasswordCommand command);
-
-    Result<String, ApplicationError> handle(RequestPhoneLoginCodeCommand command);
-
-    Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithPhoneCommand command);
 
     Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithGoogleCommand command);
 

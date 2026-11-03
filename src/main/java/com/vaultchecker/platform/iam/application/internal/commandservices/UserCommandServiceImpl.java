@@ -1,6 +1,7 @@
 package com.vaultchecker.platform.iam.application.internal.commandservices;
 
 import com.vaultchecker.platform.iam.application.commandservices.UserCommandService;
+import com.vaultchecker.platform.iam.application.internal.outboundservices.customers.CustomerDirectoryService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.hashing.HashingService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.identity.GoogleIdentityService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.notifications.NotificationService;
@@ -9,11 +10,9 @@ import com.vaultchecker.platform.iam.domain.model.aggregates.User;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangeEmailCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangePasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.RequestPasswordRecoveryCommand;
-import com.vaultchecker.platform.iam.domain.model.commands.RequestPhoneLoginCodeCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ResetPasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInWithGoogleCommand;
-import com.vaultchecker.platform.iam.domain.model.commands.SignInWithPhoneCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.UpdateProfileCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.VerifyEmailCommand;
@@ -21,6 +20,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.VerifyRecoveryCodeCom
 import com.vaultchecker.platform.iam.domain.model.entities.Role;
 import com.vaultchecker.platform.iam.domain.model.events.UserSignedUpEvent;
 import com.vaultchecker.platform.iam.domain.model.valueobjects.RoleNameMapper;
+import com.vaultchecker.platform.shared.domain.model.events.AuditableActionRegisteredEvent;
 import com.vaultchecker.platform.iam.domain.model.valueobjects.Roles;
 import com.vaultchecker.platform.iam.domain.repositories.RoleRepository;
 import com.vaultchecker.platform.iam.domain.repositories.UserRepository;
@@ -42,7 +42,6 @@ import java.util.List;
 public class UserCommandServiceImpl implements UserCommandService {
 
     private static final Duration RECOVERY_CODE_TTL = Duration.ofMinutes(15);
-    private static final Duration LOGIN_CODE_TTL = Duration.ofMinutes(5);
 
     private final UserRepository userRepository;
     private final HashingService hashingService;
@@ -51,6 +50,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationService notificationService;
     private final GoogleIdentityService googleIdentityService;
+    private final CustomerDirectoryService customerDirectoryService;
     private final String frontendBaseUrl;
     private final SecureRandom random = new SecureRandom();
 
@@ -62,6 +62,7 @@ public class UserCommandServiceImpl implements UserCommandService {
             ApplicationEventPublisher eventPublisher,
             NotificationService notificationService,
             GoogleIdentityService googleIdentityService,
+            CustomerDirectoryService customerDirectoryService,
             @Value("${frontend.base-url}") String frontendBaseUrl) {
         this.userRepository = userRepository;
         this.hashingService = hashingService;
@@ -70,6 +71,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         this.eventPublisher = eventPublisher;
         this.notificationService = notificationService;
         this.googleIdentityService = googleIdentityService;
+        this.customerDirectoryService = customerDirectoryService;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -82,8 +84,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (!hashingService.matches(command.password(), user.get().getPassword())) {
             return Result.failure(ApplicationError.validationError("credentials", "Invalid email or password"));
         }
-        var token = tokenService.generateToken(user.get().getEmail());
-        return Result.success(ImmutablePair.of(user.get(), token));
+        var linked = linkCustomerRecord(user.get());
+        var token = tokenService.generateToken(linked.getEmail());
+        recordSignIn(linked);
+        return Result.success(ImmutablePair.of(linked, token));
     }
 
     @Override
@@ -101,6 +105,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         user.setName(command.name());
         user.setPhone(command.phone());
         user.setStoreId(command.storeId());
+        if (user.isCustomer()) {
+            customerDirectoryService.findByPhone(user.getPhone())
+                    .ifPresent(link -> user.linkCustomer(link.customerId(), link.storeId()));
+        }
         var verificationToken = generateToken();
         user.issueVerificationToken(verificationToken);
         userRepository.save(user);
@@ -165,18 +173,6 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
-    public Result<String, ApplicationError> handle(RequestPhoneLoginCodeCommand command) {
-        var user = userRepository.findByPhone(command.phone());
-        if (user.isEmpty()) {
-            return Result.failure(ApplicationError.notFound("Phone", command.phone()));
-        }
-        var code = generateCode();
-        user.get().issueLoginCode(code, expiryAfter(LOGIN_CODE_TTL));
-        userRepository.save(user.get());
-        return Result.success(code);
-    }
-
-    @Override
     public Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithGoogleCommand command) {
         var email = googleIdentityService.verifiedEmail(command.accessToken());
         if (email.isEmpty()) {
@@ -186,25 +182,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (user.isEmpty()) {
             return Result.failure(ApplicationError.notFound("User", email.get()));
         }
-        var token = tokenService.generateToken(user.get().getEmail());
-        return Result.success(ImmutablePair.of(user.get(), token));
-    }
-
-    @Override
-    public Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithPhoneCommand command) {
-        var user = userRepository.findByPhone(command.phone());
-        if (user.isEmpty()) {
-            return Result.failure(ApplicationError.notFound("Phone", command.phone()));
-        }
-        if (!user.get().hasLoginCode(command.code().trim())) {
-            return Result.failure(ApplicationError.validationError("code", "Invalid login code"));
-        }
-        if (user.get().isLoginCodeExpired(System.currentTimeMillis())) {
-            return Result.failure(ApplicationError.businessRuleViolation("code-expired", "Login code expired"));
-        }
-        user.get().clearLoginCode();
-        var saved = userRepository.save(user.get());
-        return Result.success(ImmutablePair.of(saved, tokenService.generateToken(saved.getEmail())));
+        var linked = linkCustomerRecord(user.get());
+        var token = tokenService.generateToken(linked.getEmail());
+        recordSignIn(linked);
+        return Result.success(ImmutablePair.of(linked, token));
     }
 
     @Override
@@ -253,6 +234,26 @@ public class UserCommandServiceImpl implements UserCommandService {
     private Roles resolveRoleName(String requestedRole) {
 
         return RoleNameMapper.fromClientRole(requestedRole, Role.getDefaultRole().getName());
+    }
+
+    private void recordSignIn(User user) {
+        var role = user.getRoles().stream().findFirst()
+                .map(r -> RoleNameMapper.toClientRole(r.getName()))
+                .orElse("customer");
+        eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
+                role, "USER_SIGNED_IN", "User %s signed in".formatted(user.getEmail())));
+    }
+
+    private User linkCustomerRecord(User user) {
+        if (!user.isCustomer() || user.getCustomerId() != null) {
+            return user;
+        }
+        return customerDirectoryService.findByPhone(user.getPhone())
+                .map(link -> {
+                    user.linkCustomer(link.customerId(), link.storeId());
+                    return userRepository.save(user);
+                })
+                .orElse(user);
     }
 
     private String generateCode() {

@@ -1,6 +1,7 @@
 package com.vaultchecker.platform.iam.domain.model.aggregates;
 
 import com.vaultchecker.platform.iam.domain.model.entities.Role;
+import com.vaultchecker.platform.iam.domain.model.valueobjects.Roles;
 import com.vaultchecker.platform.shared.domain.model.aggregates.AbstractDomainAggregateRoot;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,10 +35,6 @@ public class User extends AbstractDomainAggregateRoot<User> {
     private String recoveryCode;
     @Setter
     private Long recoveryExpiresAt;
-    @Setter
-    private String loginCode;
-    @Setter
-    private Long loginCodeExpiresAt;
     @Setter
     private Set<Role> roles;
 
@@ -102,27 +99,18 @@ public class User extends AbstractDomainAggregateRoot<User> {
         return recoveryExpiresAt != null && now > recoveryExpiresAt;
     }
 
+    public boolean isCustomer() {
+        return roles.stream().anyMatch(role -> role.getName() == Roles.ROLE_CUSTOMER);
+    }
+
+    public void linkCustomer(String customerId, String storeId) {
+        this.customerId = customerId;
+        this.storeId = storeId;
+    }
+
     public void resetPassword(String encodedPassword) {
         this.password = encodedPassword;
         this.recoveryCode = null;
         this.recoveryExpiresAt = null;
-    }
-
-    public void issueLoginCode(String code, long expiresAt) {
-        this.loginCode = code;
-        this.loginCodeExpiresAt = expiresAt;
-    }
-
-    public boolean hasLoginCode(String code) {
-        return loginCode != null && loginCode.equals(code);
-    }
-
-    public boolean isLoginCodeExpired(long now) {
-        return loginCodeExpiresAt != null && now > loginCodeExpiresAt;
-    }
-
-    public void clearLoginCode() {
-        this.loginCode = null;
-        this.loginCodeExpiresAt = null;
     }
 }

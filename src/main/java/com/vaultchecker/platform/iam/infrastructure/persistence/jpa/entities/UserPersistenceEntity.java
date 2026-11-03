@@ -46,12 +46,6 @@ public class UserPersistenceEntity extends AuditableAbstractPersistenceEntity {
     @Column(name = "recovery_expires_at")
     private Long recoveryExpiresAt;
 
-    @Column(name = "login_code", length = 10)
-    private String loginCode;
-
-    @Column(name = "login_code_expires_at")
-    private Long loginCodeExpiresAt;
-
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
