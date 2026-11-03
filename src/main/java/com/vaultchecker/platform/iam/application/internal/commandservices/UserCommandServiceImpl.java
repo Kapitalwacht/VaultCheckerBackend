@@ -44,6 +44,7 @@ public class UserCommandServiceImpl implements UserCommandService {
 
     private static final Duration RECOVERY_CODE_TTL = Duration.ofMinutes(15);
     private static final String USER_SIGNED_IN_ACTION = "USER_SIGNED_IN";
+    private static final String PASSWORD_RESET_ACTION = "PASSWORD_RESET";
 
     private final UserRepository userRepository;
     private final HashingService hashingService;
@@ -99,6 +100,9 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
 
         var roleName = resolveRoleName(command.roleName());
+        if (roleName == Roles.ROLE_SYSTEM_ADMIN && systemAdminExists()) {
+            return Result.failure(ApplicationError.forbidden("A system administrator already exists"));
+        }
 
         var role = roleRepository.findByName(roleName)
                 .orElseGet(() -> roleRepository.save(new Role(roleName)));
@@ -171,7 +175,13 @@ public class UserCommandServiceImpl implements UserCommandService {
             return Result.failure(ApplicationError.businessRuleViolation("code-expired", "Recovery code expired"));
         }
         user.get().resetPassword(hashingService.encode(command.newPassword()));
-        return Result.success(userRepository.save(user.get()));
+        var saved = userRepository.save(user.get());
+        var role = saved.getRoles().stream().findFirst().orElse(Role.getDefaultRole());
+        eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
+                RoleNameMapper.toClientRole(role.getName()),
+                PASSWORD_RESET_ACTION,
+                "Password reset for %s".formatted(saved.getEmail())));
+        return Result.success(saved);
     }
 
     @Override
@@ -243,6 +253,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         var token = tokenService.generateToken(linked.getEmail());
         recordSignIn(linked);
         return Result.success(ImmutablePair.of(linked, token));
+    }
+
+    private boolean systemAdminExists() {
+        return userRepository.findAll().stream().anyMatch(User::isSystemAdmin);
     }
 
     private void recordSignIn(User user) {

@@ -103,6 +103,10 @@ public class User extends AbstractDomainAggregateRoot<User> {
         return hasRole(Roles.ROLE_CUSTOMER);
     }
 
+    public boolean isSystemAdmin() {
+        return hasRole(Roles.ROLE_SYSTEM_ADMIN);
+    }
+
     public boolean isStoreAdmin() {
         return hasRole(Roles.ROLE_STORE_ADMIN);
     }
