@@ -5,6 +5,7 @@ import com.vaultchecker.platform.iam.application.internal.outboundservices.custo
 import com.vaultchecker.platform.iam.application.internal.outboundservices.hashing.HashingService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.identity.GoogleIdentityService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.notifications.NotificationService;
+import com.vaultchecker.platform.iam.application.internal.outboundservices.stores.StoreDirectoryService;
 import com.vaultchecker.platform.iam.application.internal.outboundservices.tokens.TokenService;
 import com.vaultchecker.platform.iam.domain.model.aggregates.User;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangeEmailCommand;
@@ -42,6 +43,7 @@ import java.util.List;
 public class UserCommandServiceImpl implements UserCommandService {
 
     private static final Duration RECOVERY_CODE_TTL = Duration.ofMinutes(15);
+    private static final String USER_SIGNED_IN_ACTION = "USER_SIGNED_IN";
 
     private final UserRepository userRepository;
     private final HashingService hashingService;
@@ -51,6 +53,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final NotificationService notificationService;
     private final GoogleIdentityService googleIdentityService;
     private final CustomerDirectoryService customerDirectoryService;
+    private final StoreDirectoryService storeDirectoryService;
     private final String frontendBaseUrl;
     private final SecureRandom random = new SecureRandom();
 
@@ -63,6 +66,7 @@ public class UserCommandServiceImpl implements UserCommandService {
             NotificationService notificationService,
             GoogleIdentityService googleIdentityService,
             CustomerDirectoryService customerDirectoryService,
+            StoreDirectoryService storeDirectoryService,
             @Value("${frontend.base-url}") String frontendBaseUrl) {
         this.userRepository = userRepository;
         this.hashingService = hashingService;
@@ -72,6 +76,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         this.notificationService = notificationService;
         this.googleIdentityService = googleIdentityService;
         this.customerDirectoryService = customerDirectoryService;
+        this.storeDirectoryService = storeDirectoryService;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -84,10 +89,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (!hashingService.matches(command.password(), user.get().getPassword())) {
             return Result.failure(ApplicationError.validationError("credentials", "Invalid email or password"));
         }
-        var linked = linkCustomerRecord(user.get());
-        var token = tokenService.generateToken(linked.getEmail());
-        recordSignIn(linked);
-        return Result.success(ImmutablePair.of(linked, token));
+        return openSession(user.get());
     }
 
     @Override
@@ -115,7 +117,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         return userRepository.findByEmail(command.email())
                 .<Result<User, ApplicationError>>map(savedUser -> {
                     eventPublisher.publishEvent(new UserSignedUpEvent(
-                            savedUser.getId(), savedUser.getEmail(), roleName.name()));
+                            savedUser.getId(), savedUser.getEmail(), RoleNameMapper.toClientRole(roleName)));
                     notificationService.sendVerificationEmail(savedUser.getEmail(), savedUser.getName(),
                             verificationLink(verificationToken, savedUser.getEmail()));
                     return Result.success(savedUser);
@@ -182,10 +184,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (user.isEmpty()) {
             return Result.failure(ApplicationError.notFound("User", email.get()));
         }
-        var linked = linkCustomerRecord(user.get());
-        var token = tokenService.generateToken(linked.getEmail());
-        recordSignIn(linked);
-        return Result.success(ImmutablePair.of(linked, token));
+        return openSession(user.get());
     }
 
     @Override
@@ -236,12 +235,22 @@ public class UserCommandServiceImpl implements UserCommandService {
         return RoleNameMapper.fromClientRole(requestedRole, Role.getDefaultRole().getName());
     }
 
+    private Result<ImmutablePair<User, String>, ApplicationError> openSession(User user) {
+        var linked = linkCustomerRecord(user);
+        if (linked.isStoreAdmin() && storeDirectoryService.isInactive(linked.getStoreId())) {
+            return Result.failure(ApplicationError.conflict("Store", "The store was deactivated"));
+        }
+        var token = tokenService.generateToken(linked.getEmail());
+        recordSignIn(linked);
+        return Result.success(ImmutablePair.of(linked, token));
+    }
+
     private void recordSignIn(User user) {
-        var role = user.getRoles().stream().findFirst()
-                .map(r -> RoleNameMapper.toClientRole(r.getName()))
-                .orElse("customer");
+        var role = user.getRoles().stream().findFirst().orElse(Role.getDefaultRole());
         eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
-                role, "USER_SIGNED_IN", "User %s signed in".formatted(user.getEmail())));
+                RoleNameMapper.toClientRole(role.getName()),
+                USER_SIGNED_IN_ACTION,
+                "User %s signed in".formatted(user.getEmail())));
     }
 
     private User linkCustomerRecord(User user) {

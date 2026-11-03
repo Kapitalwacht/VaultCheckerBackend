@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping(value = "/api/v1/stores", produces = MediaType.APPLICATION_JSON_VALUE)
 @Tag(name = "Stores", description = "Platform store management endpoints")
+@PreAuthorize("hasRole('SYSTEM_ADMIN')")
 public class StoresController {
     private final StoreCommandService storeCommandService;
     private final StoreQueryService storeQueryService;
@@ -52,6 +54,7 @@ public class StoresController {
 
     @PostMapping
     @Operation(summary = "Register a new store", security = @SecurityRequirement(name = "bearerAuth"))
+    @PreAuthorize("hasRole('SYSTEM_ADMIN') or #resource.storeId() == authentication.principal.storeId")
     public ResponseEntity<?> createStore(@Valid @RequestBody CreateStoreResource resource) {
         var command = CreateStoreCommandFromResourceAssembler.toCommandFromResource(resource);
         var result = storeCommandService.handle(command);

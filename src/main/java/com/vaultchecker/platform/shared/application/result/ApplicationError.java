@@ -40,6 +40,13 @@ public record ApplicationError(
                 reason);
     }
 
+    public static ApplicationError forbidden(String reason) {
+        return new ApplicationError(
+                "FORBIDDEN",
+                "Access denied",
+                reason);
+    }
+
     public static ApplicationError serviceUnavailable(String service, String reason) {
         return new ApplicationError(
                 "SERVICE_UNAVAILABLE",

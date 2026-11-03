@@ -5,6 +5,7 @@ import com.vaultchecker.platform.shared.interfaces.rest.transform.ErrorResponseA
 import org.jspecify.annotations.NullMarked;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -51,6 +52,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> handleNoResourceFound(NoResourceFoundException ex) {
         var applicationError = ApplicationError.notFound("Endpoint", ex.getResourcePath());
         return ErrorResponseAssembler.toErrorResponseFromApplicationError(applicationError);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
+        return ErrorResponseAssembler.toErrorResponseFromApplicationError(ApplicationError.forbidden(ex.getMessage()));
     }
 
     @ExceptionHandler(RuntimeException.class)

@@ -100,7 +100,15 @@ public class User extends AbstractDomainAggregateRoot<User> {
     }
 
     public boolean isCustomer() {
-        return roles.stream().anyMatch(role -> role.getName() == Roles.ROLE_CUSTOMER);
+        return hasRole(Roles.ROLE_CUSTOMER);
+    }
+
+    public boolean isStoreAdmin() {
+        return hasRole(Roles.ROLE_STORE_ADMIN);
+    }
+
+    private boolean hasRole(Roles name) {
+        return roles.stream().anyMatch(role -> role.getName() == name);
     }
 
     public void linkCustomer(String customerId, String storeId) {
