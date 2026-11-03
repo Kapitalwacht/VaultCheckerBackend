@@ -1,7 +1,6 @@
 package com.vaultchecker.platform.credit.application.internal.queryservices;
 
 import com.vaultchecker.platform.credit.application.queryservices.CreditStatementQueryService;
-import com.vaultchecker.platform.credit.domain.model.aggregates.CreditAccount;
 import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayment;
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
 import com.vaultchecker.platform.credit.domain.model.queries.GetCreditStatementQuery;
@@ -10,8 +9,8 @@ import com.vaultchecker.platform.credit.domain.repositories.CreditAccountReposit
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
 import com.vaultchecker.platform.credit.domain.services.CreditCycle;
+import com.vaultchecker.platform.credit.domain.services.FinanceConstants;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
-import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
 import org.springframework.stereotype.Service;
 
@@ -26,10 +25,6 @@ import java.util.Optional;
 
 @Service
 public class CreditStatementQueryServiceImpl implements CreditStatementQueryService {
-
-    private static final int DEFAULT_CUTOFF_DAY = 25;
-    private static final int DEFAULT_PAYMENT_DAY = 5;
-    private static final String PAID = "paid";
 
     private final CreditAccountRepository creditAccountRepository;
     private final PurchaseRepository purchaseRepository;
@@ -52,15 +47,15 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
         if (customerId == null) {
             return Optional.empty();
         }
-        var customer = findCustomer(customerId);
+        var customer = customerRepository.findByReference(customerId).orElse(null);
         if (customer == null) {
             return Optional.empty();
         }
         var account = creditAccountRepository.findAllByCustomerId(customerId).stream().findFirst().orElse(null);
 
-        var cutoffDate = query.asOfDate() != null ? query.asOfDate() : LocalDate.now(CreditAccount.BUSINESS_ZONE);
-        int cutoffDay = customer.getCutoffDay() != null ? customer.getCutoffDay() : DEFAULT_CUTOFF_DAY;
-        int paymentDay = customer.getPaymentDay() != null ? customer.getPaymentDay() : DEFAULT_PAYMENT_DAY;
+        var cutoffDate = query.asOfDate() != null ? query.asOfDate() : LocalDate.now();
+        int cutoffDay = customer.getCutoffDay() != null ? customer.getCutoffDay() : FinanceConstants.DEFAULT_CUTOFF_DAY;
+        int paymentDay = customer.getPaymentDay() != null ? customer.getPaymentDay() : FinanceConstants.DEFAULT_PAYMENT_DAY;
         var paymentDate = CreditCycle.graceEndDate(cutoffDate, cutoffDay, paymentDay);
 
         var compensatoryRate = CreditCycle.effectiveAnnualRate(
@@ -83,7 +78,7 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
                         .ifPresent(lines::add);
             } else {
                 installments.stream()
-                        .filter(row -> !PAID.equalsIgnoreCase(row.getState()))
+                        .filter(row -> !InstallmentPayment.PAID.equalsIgnoreCase(row.getState()))
                         .filter(row -> row.getScheduledDate() != null && !row.getScheduledDate().isAfter(paymentDate))
                         .sorted(Comparator.comparing(InstallmentPayment::getPeriod))
                         .map(row -> new CreditStatement.Line(
@@ -129,7 +124,7 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
                                                              BigDecimal compensatoryRate, int cutoffDay, int paymentDay,
                                                              LocalDate paymentDate) {
         boolean paid = installments.stream()
-                .anyMatch(row -> Objects.equals(row.getPeriod(), 1) && PAID.equalsIgnoreCase(row.getState()));
+                .anyMatch(row -> Objects.equals(row.getPeriod(), 1) && InstallmentPayment.PAID.equalsIgnoreCase(row.getState()));
         var dueDate = CreditCycle.graceEndDate(purchase.getPurchaseDate(), cutoffDay, paymentDay);
         if (paid || dueDate.isAfter(paymentDate)) {
             return Optional.empty();
@@ -140,12 +135,6 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
         return Optional.of(new CreditStatement.Line(
                 purchase.getPurchaseId(), purchase.getDescription(), purchase.getPurchaseDate(),
                 1, 1, dueDate, interest, principal, principal.add(interest)));
-    }
-
-    private Customer findCustomer(String customerId) {
-        return customerRepository.findAll().stream()
-                .filter(c -> customerId.equals(c.getCustomerId()) || customerId.equals(String.valueOf(c.getId())))
-                .findFirst().orElse(null);
     }
 
     private static BigDecimal sum(List<BigDecimal> values) {

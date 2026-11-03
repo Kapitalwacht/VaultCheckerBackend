@@ -10,6 +10,14 @@ public interface ProductRepository {
 
     List<Product> findAll();
 
+    default Optional<Product> findByReference(String reference) {
+        if (reference == null) return Optional.empty();
+        return findAll().stream()
+                .filter(product -> reference.equals(product.getProductId())
+                        || reference.equals(String.valueOf(product.getId())))
+                .findFirst();
+    }
+
     List<Product> findAllByStoreId(String storeId);
 
     Product save(Product product);

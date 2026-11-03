@@ -6,7 +6,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 @Getter
 public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
@@ -28,7 +27,6 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
 
     public static final String CURRENT = "current";
     public static final String OVERDUE = "overdue";
-    public static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Lima");
 
     public CreditAccount() {
         this.balance = BigDecimal.ZERO;
@@ -75,7 +73,7 @@ public class CreditAccount extends AbstractDomainAggregateRoot<CreditAccount> {
     }
 
     public boolean isOverdue() {
-        return isOverdueOn(LocalDate.now(BUSINESS_ZONE));
+        return isOverdueOn(LocalDate.now());
     }
 
     public boolean isOverdueOn(LocalDate date) {

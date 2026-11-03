@@ -10,6 +10,14 @@ public interface CustomerRepository {
 
     List<Customer> findAll();
 
+    default Optional<Customer> findByReference(String reference) {
+        if (reference == null) return Optional.empty();
+        return findAll().stream()
+                .filter(customer -> reference.equals(customer.getCustomerId())
+                        || reference.equals(String.valueOf(customer.getId())))
+                .findFirst();
+    }
+
     List<Customer> findAllByStoreId(String storeId);
 
     Customer save(Customer customer);

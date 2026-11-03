@@ -7,6 +7,10 @@ public final class FinanceConstants {
     private FinanceConstants() {
     }
 
+    public static final int DEFAULT_CUTOFF_DAY = 25;
+
+    public static final int DEFAULT_PAYMENT_DAY = 5;
+
     public static final int DAY_COUNT_BASE = 360;
 
     public static final int COMMERCIAL_MONTH_DAYS = 30;

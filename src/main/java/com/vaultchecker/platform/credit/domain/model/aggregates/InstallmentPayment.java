@@ -26,6 +26,7 @@ public class InstallmentPayment extends AbstractDomainAggregateRoot<InstallmentP
     @Setter private String state;
 
     public static final String PAID = "paid";
+    public static final String PENDING = "pending";
 
     public InstallmentPayment() {
         this.installment = BigDecimal.ZERO;

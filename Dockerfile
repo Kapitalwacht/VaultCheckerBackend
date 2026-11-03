@@ -28,3 +28,4 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 # - JWT_SECRET    Secret used to sign JWT tokens.
 # Optional:
 # - PORT          Port the application listens on (default 8092).
+# - APP_TIME_ZONE Time zone of the business day (default America/Lima).

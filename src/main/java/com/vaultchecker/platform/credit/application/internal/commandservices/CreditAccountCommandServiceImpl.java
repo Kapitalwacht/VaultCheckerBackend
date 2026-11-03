@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class CreditAccountCommandServiceImpl implements CreditAccountCommandService {
 
+    private static final String OPEN_ACCOUNT_ACTION = "OPEN_CREDIT_ACCOUNT";
+
     private final CreditAccountRepository creditAccountRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -37,7 +39,7 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
         var saved = creditAccountRepository.save(account);
         eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
                 CurrentUserRole.clientRole(),
-                "OPEN_CREDIT_ACCOUNT",
+                OPEN_ACCOUNT_ACTION,
                 "Credit account %d opened for customer %s with limit %s".formatted(
                         saved.getId(), saved.getCustomerId(), saved.getCreditLimit())));
         return Result.success(saved);

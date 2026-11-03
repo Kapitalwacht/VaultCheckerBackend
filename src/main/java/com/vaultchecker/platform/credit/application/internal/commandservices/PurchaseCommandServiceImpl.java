@@ -10,6 +10,7 @@ import com.vaultchecker.platform.credit.domain.repositories.CreditAccountReposit
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
 import com.vaultchecker.platform.credit.domain.services.CreditCycle;
+import com.vaultchecker.platform.credit.domain.services.FinanceConstants;
 import com.vaultchecker.platform.credit.domain.services.FrenchAmortizationCalculator;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
 import com.vaultchecker.platform.catalog.domain.repositories.ProductRepository;
@@ -25,8 +26,6 @@ import java.time.LocalDate;
 @Service
 public class PurchaseCommandServiceImpl implements PurchaseCommandService {
 
-    private static final int DEFAULT_CUTOFF_DAY = 25;
-    private static final int DEFAULT_PAYMENT_DAY = 5;
 
     private final PurchaseRepository purchaseRepository;
     private final CreditAccountRepository creditAccountRepository;
@@ -53,8 +52,8 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         }
         int requestedMonths = command.months() == null ? 1 : command.months();
         if (!productAllowsMonths(command.productId(), requestedMonths)) {
-            return Result.failure(ApplicationError.businessRuleViolation(
-                    "payment-mode", "The product's payment mode does not allow %d month(s)".formatted(requestedMonths)));
+            return Result.failure(ApplicationError.conflict(
+                    "PaymentMode", "The product's payment mode does not allow %d month(s)".formatted(requestedMonths)));
         }
 
         var account = creditAccountRepository.findAllByCustomerId(command.customerId()).stream()
@@ -90,8 +89,8 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         var effectiveAnnualRate = customer == null ? BigDecimal.ZERO : CreditCycle.effectiveAnnualRate(
                 customer.getRateType(), customer.getRateValue(),
                 customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
-        int cutoffDay = customer != null && customer.getCutoffDay() != null ? customer.getCutoffDay() : DEFAULT_CUTOFF_DAY;
-        int paymentDay = customer != null && customer.getPaymentDay() != null ? customer.getPaymentDay() : DEFAULT_PAYMENT_DAY;
+        int cutoffDay = customer != null && customer.getCutoffDay() != null ? customer.getCutoffDay() : FinanceConstants.DEFAULT_CUTOFF_DAY;
+        int paymentDay = customer != null && customer.getPaymentDay() != null ? customer.getPaymentDay() : FinanceConstants.DEFAULT_PAYMENT_DAY;
 
         var purchaseDate = command.purchaseDate() != null ? command.purchaseDate() : LocalDate.now();
         var graceEnd = CreditCycle.graceEndDate(purchaseDate, cutoffDay, paymentDay);
@@ -113,7 +112,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
             installment.setInterest(row.interest());
             installment.setPrincipal(row.principal());
             installment.setTotal(row.payment());
-            installment.setState("pending");
+            installment.setState(InstallmentPayment.PENDING);
             installmentPaymentRepository.save(installment);
         }
 
@@ -122,20 +121,12 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
     }
 
     private boolean productAllowsMonths(String productId, int months) {
-        if (productId == null || productId.isBlank()) {
-            return true;
-        }
-        return productRepository.findAll().stream()
-                .filter(p -> productId.equals(p.getProductId()) || productId.equals(String.valueOf(p.getId())))
-                .findFirst()
-                .map(p -> p.allowsMonths(months))
+        return productRepository.findByReference(productId)
+                .map(product -> product.allowsMonths(months))
                 .orElse(true);
     }
 
     private Customer findCustomer(String customerId) {
-        if (customerId == null) return null;
-        return customerRepository.findAll().stream()
-                .filter(c -> customerId.equals(c.getCustomerId()) || customerId.equals(String.valueOf(c.getId())))
-                .findFirst().orElse(null);
+        return customerRepository.findByReference(customerId).orElse(null);
     }
 }

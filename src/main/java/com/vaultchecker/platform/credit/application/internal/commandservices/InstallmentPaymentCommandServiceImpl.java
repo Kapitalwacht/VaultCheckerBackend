@@ -15,8 +15,6 @@ import java.util.Objects;
 @Service
 public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentCommandService {
 
-    private static final String PAID = "paid";
-
     private final InstallmentPaymentRepository repository;
     private final CreditAccountRepository creditAccountRepository;
 
@@ -34,7 +32,7 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
         var scheduled = repository.findAllByPurchaseId(command.purchaseId()).stream()
                 .filter(row -> Objects.equals(row.getPeriod(), command.period()))
                 .findFirst();
-        if (scheduled.isPresent() && PAID.equalsIgnoreCase(scheduled.get().getState())) {
+        if (scheduled.isPresent() && InstallmentPayment.PAID.equalsIgnoreCase(scheduled.get().getState())) {
             return Result.failure(ApplicationError.conflict("InstallmentPayment", "Installment already paid"));
         }
 
@@ -51,10 +49,10 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
         if (command.interest() != null) payment.setInterest(command.interest());
         if (command.principal() != null) payment.setPrincipal(command.principal());
         if (command.total() != null) payment.setTotal(command.total());
-        payment.setState(command.state() != null && !command.state().isBlank() ? command.state() : PAID);
+        payment.setState(command.state() != null && !command.state().isBlank() ? command.state() : InstallmentPayment.PAID);
         var saved = repository.save(payment);
 
-        if (PAID.equalsIgnoreCase(saved.getState())) {
+        if (InstallmentPayment.PAID.equalsIgnoreCase(saved.getState())) {
             reduceCustomerBalance(saved.getCustomerId(), saved.getPrincipal());
         }
         return Result.success(saved);

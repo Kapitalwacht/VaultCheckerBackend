@@ -9,7 +9,6 @@ import com.vaultchecker.platform.credit.domain.repositories.PaymentRepository;
 import com.vaultchecker.platform.credit.domain.services.CreditCycle;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
 import com.vaultchecker.platform.credit.domain.services.PaymentAllocationCalculator;
-import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
@@ -24,6 +23,8 @@ import java.time.temporal.ChronoUnit;
 
 @Service
 public class PaymentCommandServiceImpl implements PaymentCommandService {
+
+    private static final String REGISTER_PAYMENT_ACTION = "REGISTER_PAYMENT";
 
     private final CreditAccountRepository creditAccountRepository;
     private final PaymentRepository paymentRepository;
@@ -48,7 +49,7 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
             return Result.failure(ApplicationError.notFound("CreditAccount", String.valueOf(command.creditAccountId())));
         }
         var account = accountOpt.get();
-        var paymentDate = command.date() != null ? command.date() : LocalDate.now(CreditAccount.BUSINESS_ZONE);
+        var paymentDate = command.date() != null ? command.date() : LocalDate.now();
 
         int daysLate = daysLate(account, paymentDate);
         var lateDue = daysLate > 0
@@ -77,7 +78,7 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
 
         eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
                 CurrentUserRole.clientRole(),
-                "REGISTER_PAYMENT",
+                REGISTER_PAYMENT_ACTION,
                 "Payment of %s on credit account %d (late interest %s for %d days)".formatted(
                         command.amount(), command.creditAccountId(), allocation.toLateInterest(), daysLate)));
         return Result.success(saved);
@@ -91,18 +92,10 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
     }
 
     private BigDecimal moratoryRate(CreditAccount account) {
-        var customerId = account.getCustomerId();
-        if (customerId == null) {
-            return BigDecimal.ZERO;
-        }
-        Customer customer = customerRepository.findAll().stream()
-                .filter(c -> customerId.equals(c.getCustomerId()) || customerId.equals(String.valueOf(c.getId())))
-                .findFirst().orElse(null);
-        if (customer == null) {
-            return BigDecimal.ZERO;
-        }
-        return CreditCycle.effectiveAnnualRate(
-                customer.getMoratoriumRateType(), customer.getMoratoriumRateValue(),
-                customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
+        return customerRepository.findByReference(account.getCustomerId())
+                .map(customer -> CreditCycle.effectiveAnnualRate(
+                        customer.getMoratoriumRateType(), customer.getMoratoriumRateValue(),
+                        customer.getRatePeriodDays(), customer.getRateCapitalizationDays()))
+                .orElse(BigDecimal.ZERO);
     }
 }
