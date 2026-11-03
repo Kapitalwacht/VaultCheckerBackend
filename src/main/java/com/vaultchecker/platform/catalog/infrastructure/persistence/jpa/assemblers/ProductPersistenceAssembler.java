@@ -17,6 +17,7 @@ public final class ProductPersistenceAssembler {
         product.setName(entity.getName());
         product.setCategory(entity.getCategory());
         product.setBrand(entity.getBrand());
+        product.setSupplier(entity.getSupplier());
         product.setUnit(entity.getUnit());
         product.setCashPrice(entity.getCashPrice());
         product.setListPrice(entity.getListPrice());
@@ -37,6 +38,7 @@ public final class ProductPersistenceAssembler {
         entity.setName(product.getName());
         entity.setCategory(product.getCategory());
         entity.setBrand(product.getBrand());
+        entity.setSupplier(product.getSupplier());
         entity.setUnit(product.getUnit());
         entity.setCashPrice(product.getCashPrice());
         entity.setListPrice(product.getListPrice());

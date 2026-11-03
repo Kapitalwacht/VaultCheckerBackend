@@ -11,6 +11,7 @@ public record CreateProductResource(
         @NotBlank @Size(max = 150) String name,
         @Size(max = 80) String category,
         @Size(max = 80) String brand,
+        @Size(max = 120) String supplier,
         @Size(max = 30) String unit,
         BigDecimal cashPrice,
         BigDecimal listPrice,

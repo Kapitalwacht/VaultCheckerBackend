@@ -15,6 +15,7 @@ public class Product extends AbstractDomainAggregateRoot<Product> {
     @Setter private String name;
     @Setter private String category;
     @Setter private String brand;
+    @Setter private String supplier;
     @Setter private String unit;
     @Setter private BigDecimal cashPrice;
     @Setter private BigDecimal listPrice;
@@ -25,6 +26,8 @@ public class Product extends AbstractDomainAggregateRoot<Product> {
     public static final String ACTIVE = "active";
     public static final String INACTIVE = "inactive";
     public static final String BOTH = "both";
+    public static final String SINGLE = "single";
+    public static final String INSTALLMENTS = "installments";
 
     public Product() {
         this.state = ACTIVE;
@@ -35,13 +38,14 @@ public class Product extends AbstractDomainAggregateRoot<Product> {
     }
 
     public Product(String productId, String storeId, String name, String category, String brand,
-                   String unit, BigDecimal cashPrice, BigDecimal listPrice, String paymentMode, String imageUrl) {
+                   String supplier, String unit, BigDecimal cashPrice, BigDecimal listPrice, String paymentMode, String imageUrl) {
         this();
         this.productId = productId;
         this.storeId = storeId;
         this.name = name;
         this.category = category;
         this.brand = brand;
+        this.supplier = supplier;
         this.unit = unit != null ? unit : "unit";
         this.cashPrice = cashPrice != null ? cashPrice : BigDecimal.ZERO;
         this.listPrice = listPrice != null ? listPrice : BigDecimal.ZERO;
@@ -55,5 +59,15 @@ public class Product extends AbstractDomainAggregateRoot<Product> {
 
     public boolean isActive() {
         return ACTIVE.equalsIgnoreCase(this.state);
+    }
+
+    public boolean allowsMonths(int months) {
+        if (SINGLE.equalsIgnoreCase(paymentMode)) {
+            return months <= 1;
+        }
+        if (INSTALLMENTS.equalsIgnoreCase(paymentMode)) {
+            return months > 1;
+        }
+        return true;
     }
 }

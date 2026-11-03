@@ -32,6 +32,9 @@ public class ProductPersistenceEntity extends AuditableAbstractPersistenceEntity
     @Column(name = "brand", length = 80)
     private String brand;
 
+    @Column(name = "supplier", length = 120)
+    private String supplier;
+
     @Column(name = "unit", length = 30)
     private String unit;
 

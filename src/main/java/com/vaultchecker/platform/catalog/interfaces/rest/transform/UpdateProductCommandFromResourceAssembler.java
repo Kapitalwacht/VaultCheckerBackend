@@ -6,7 +6,7 @@ import com.vaultchecker.platform.catalog.interfaces.rest.resources.UpdateProduct
 public class UpdateProductCommandFromResourceAssembler {
     public static UpdateProductCommand toCommandFromResource(Long id, UpdateProductResource resource) {
         return new UpdateProductCommand(id, resource.productId(), resource.storeId(), resource.name(),
-                resource.category(), resource.brand(), resource.unit(), resource.cashPrice(),
+                resource.category(), resource.brand(), resource.supplier(), resource.unit(), resource.cashPrice(),
                 resource.listPrice(), resource.paymentMode(), resource.imageUrl(), resource.state());
     }
 }

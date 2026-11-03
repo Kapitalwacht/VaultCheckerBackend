@@ -25,7 +25,7 @@ public class ProductCommandServiceImpl implements ProductCommandService {
             return Result.failure(ApplicationError.validationError("name", "Product name is required"));
         }
         var product = new Product(command.productId(), command.storeId(), command.name(), command.category(),
-                command.brand(), command.unit(), command.cashPrice(), command.listPrice(), command.paymentMode(),
+                command.brand(), command.supplier(), command.unit(), command.cashPrice(), command.listPrice(), command.paymentMode(),
                 command.imageUrl());
         return Result.success(productRepository.save(product));
     }
@@ -42,6 +42,7 @@ public class ProductCommandServiceImpl implements ProductCommandService {
         product.setName(command.name());
         product.setCategory(command.category());
         product.setBrand(command.brand());
+        product.setSupplier(command.supplier());
         product.setUnit(command.unit());
         product.setCashPrice(command.cashPrice());
         product.setListPrice(command.listPrice());

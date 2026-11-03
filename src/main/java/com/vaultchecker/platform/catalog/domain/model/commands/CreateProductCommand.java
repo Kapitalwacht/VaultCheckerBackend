@@ -3,6 +3,6 @@ package com.vaultchecker.platform.catalog.domain.model.commands;
 import java.math.BigDecimal;
 
 public record CreateProductCommand(String productId, String storeId, String name, String category, String brand,
-                                   String unit, BigDecimal cashPrice, BigDecimal listPrice, String paymentMode,
+                                   String supplier, String unit, BigDecimal cashPrice, BigDecimal listPrice, String paymentMode,
                                    String imageUrl) {
 }
