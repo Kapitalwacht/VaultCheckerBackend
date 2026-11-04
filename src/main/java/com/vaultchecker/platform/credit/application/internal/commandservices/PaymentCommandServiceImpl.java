@@ -46,7 +46,7 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
     @Override
     public Result<Payment, ApplicationError> handle(RegisterPaymentCommand command) {
         if (command.amount() == null || command.amount().signum() <= 0) {
-            return Result.failure(ApplicationError.validationError("amount", "Payment amount must be positive"));
+            return Result.failure(ApplicationError.validationError("amount", "error.detail.payment-amount-positive"));
         }
         var accountOpt = creditAccountRepository.findById(command.creditAccountId());
         if (accountOpt.isEmpty()) {
@@ -56,7 +56,7 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
         CurrentUserScope.requireStore(account.getStoreId());
         if (!pendingDebtService.pendingDueDates(account.getCustomerId()).isEmpty()) {
             return Result.failure(ApplicationError.conflict(
-                    "PendingPurchases", "Pending purchases are paid one by one from the payment plan"));
+                    "PendingPurchases", "error.detail.pending-purchases"));
         }
         var paymentDate = command.date() != null ? command.date() : LocalDate.now();
 
@@ -71,7 +71,7 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
         if (command.amount().compareTo(totalDue) < 0) {
             return Result.failure(ApplicationError.businessRuleViolation(
                     "partial-payment",
-                    "Partial payments are not allowed; the full amount due (%s) must be paid".formatted(totalDue)));
+                    "error.detail.partial-payment"));
         }
 
         var allocation = PaymentAllocationCalculator.allocate(command.amount(), lateDue, compDue, principalDue);

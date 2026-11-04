@@ -22,10 +22,10 @@ public class StoreCommandServiceImpl implements StoreCommandService {
     @Override
     public Result<Store, ApplicationError> handle(CreateStoreCommand command) {
         if (command.ruc() != null && !command.ruc().isBlank() && storeRepository.existsByRuc(command.ruc())) {
-            return Result.failure(ApplicationError.conflict("Store", "A store with the same RUC already exists"));
+            return Result.failure(ApplicationError.conflict("Store", "error.detail.store-ruc-taken"));
         }
         if (command.storeId() != null && !command.storeId().isBlank() && storeRepository.existsByStoreId(command.storeId())) {
-            return Result.failure(ApplicationError.conflict("Store", "A store with the same storeId already exists"));
+            return Result.failure(ApplicationError.conflict("Store", "error.detail.store-id-taken"));
         }
         var store = new Store(command.storeId(), command.ruc(), command.businessName(), command.category(),
                 command.address(), command.phone(), command.email(), command.description());

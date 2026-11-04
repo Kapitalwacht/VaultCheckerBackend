@@ -26,7 +26,7 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
     @Override
     public Result<Customer, ApplicationError> handle(CreateCustomerCommand command) {
         if (command.firstName() == null || command.firstName().isBlank()) {
-            return Result.failure(ApplicationError.validationError("firstName", "Customer first name is required"));
+            return Result.failure(ApplicationError.validationError("firstName", "error.detail.customer-name-required"));
         }
         var customer = new Customer(command.customerId(), command.storeId(), command.firstName(), command.lastName(),
                 command.dni(), command.phone(), command.address(), command.creditLimit());
@@ -45,7 +45,7 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
         var customer = existing.get();
         boolean currencyChanged = command.currency() != null && !command.currency().equals(customer.getCurrency());
         if (currencyChanged && creditAccountDirectoryService.hasDebt(customer.getId())) {
-            return Result.failure(ApplicationError.conflict("CustomerCurrency", "The currency cannot change while the customer has debt"));
+            return Result.failure(ApplicationError.conflict("CustomerCurrency", "error.detail.currency-locked"));
         }
         customer.setCustomerId(command.customerId());
         customer.setStoreId(command.storeId());
@@ -72,7 +72,7 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
             return Result.failure(ApplicationError.notFound("Customer", String.valueOf(command.id())));
         }
         if (creditAccountDirectoryService.hasDebt(command.id())) {
-            return Result.failure(ApplicationError.conflict("CustomerDebt", "A customer with debt cannot be deleted"));
+            return Result.failure(ApplicationError.conflict("CustomerDebt", "error.detail.customer-has-debt"));
         }
         customerRepository.deleteById(command.id());
         return Result.success(true);

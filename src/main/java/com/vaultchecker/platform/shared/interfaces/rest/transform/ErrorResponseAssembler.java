@@ -23,8 +23,16 @@ public final class ErrorResponseAssembler {
     public static ResponseEntity<ErrorResource> toErrorResponseFromApplicationError(ApplicationError error) {
         HttpStatusCode status = toStatusFromErrorCode(error.code());
         String localizedMessage = toLocalizedMessageFromApplicationError(error);
-        ErrorResource resource = new ErrorResource(error.code(), localizedMessage, error.details());
+        ErrorResource resource = new ErrorResource(error.code(), localizedMessage, toLocalizedDetails(error.details()));
         return new ResponseEntity<>(resource, status);
+    }
+
+    private static String toLocalizedDetails(String details) {
+        if (details == null) {
+            return null;
+        }
+        String localizedDetails = toLocalizedMessageOrNull(details);
+        return localizedDetails != null ? localizedDetails : details;
     }
 
     private static String toLocalizedMessageFromApplicationError(ApplicationError error) {

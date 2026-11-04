@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
-        return ErrorResponseAssembler.toErrorResponseFromApplicationError(ApplicationError.forbidden(ex.getMessage()));
+        return ErrorResponseAssembler.toErrorResponseFromApplicationError(ApplicationError.forbidden("error.detail.access-denied"));
     }
 
     @ExceptionHandler(RuntimeException.class)

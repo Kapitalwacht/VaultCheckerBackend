@@ -52,7 +52,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
     @Override
     public Result<Purchase, ApplicationError> handle(RegisterPurchaseCommand command) {
         if (command.amount() == null || command.amount().signum() <= 0) {
-            return Result.failure(ApplicationError.validationError("amount", "Purchase amount must be positive"));
+            return Result.failure(ApplicationError.validationError("amount", "error.detail.purchase-amount-positive"));
         }
         var customer = customerRepository.findByReference(command.customerId()).orElse(null);
         if (customer == null) {
@@ -62,11 +62,11 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         int months = command.months() == null ? 1 : command.months();
         if (customer.getMaxMonths() != null && months > customer.getMaxMonths()) {
             return Result.failure(ApplicationError.validationError(
-                    "months", "The customer only allows up to %d month(s)".formatted(customer.getMaxMonths())));
+                    "months", "error.detail.max-months"));
         }
         if (!productAllowsMonths(command.productId(), months)) {
             return Result.failure(ApplicationError.conflict(
-                    "PaymentMode", "The product's payment mode does not allow %d month(s)".formatted(months)));
+                    "PaymentMode", "error.detail.payment-mode"));
         }
 
         var account = creditAccountRepository.findAllByCustomerId(command.customerId()).stream()
@@ -76,8 +76,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         if (account.wouldExceedLimit(command.amount())) {
             return Result.failure(ApplicationError.businessRuleViolation(
                     "credit-limit",
-                    "Purchase of %s exceeds available credit (balance %s, limit %s)".formatted(
-                            command.amount(), account.getBalance(), account.getCreditLimit())));
+                    "error.detail.credit-limit"));
         }
 
         var purchase = new Purchase(command.purchaseId(), command.storeId(), command.customerId(),

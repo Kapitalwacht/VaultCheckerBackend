@@ -29,12 +29,12 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
     @Override
     public Result<CreditAccount, ApplicationError> handle(CreateCreditAccountCommand command) {
         if (command.customerId() != null && !creditAccountRepository.findAllByCustomerId(command.customerId()).isEmpty()) {
-            return Result.failure(ApplicationError.conflict("CreditAccount", "Customer already has a credit account"));
+            return Result.failure(ApplicationError.conflict("CreditAccount", "error.detail.account-exists"));
         }
         var account = new CreditAccount(command.creditId(), command.storeId(), command.customerId(),
                 command.balance(), command.creditLimit(), command.dueDate());
         if (account.exceedsLimit()) {
-            return Result.failure(ApplicationError.validationError("balance", "Balance exceeds the credit limit"));
+            return Result.failure(ApplicationError.validationError("balance", "error.detail.balance-over-limit"));
         }
         var saved = creditAccountRepository.save(account);
         eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
@@ -64,7 +64,7 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
         }
         account.setDueDate(command.dueDate());
         if (account.exceedsLimit()) {
-            return Result.failure(ApplicationError.validationError("balance", "Balance exceeds the credit limit"));
+            return Result.failure(ApplicationError.validationError("balance", "error.detail.balance-over-limit"));
         }
         return Result.success(creditAccountRepository.save(account));
     }

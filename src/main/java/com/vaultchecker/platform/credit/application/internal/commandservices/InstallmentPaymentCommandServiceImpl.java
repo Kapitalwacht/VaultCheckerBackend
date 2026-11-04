@@ -45,19 +45,19 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
     @Override
     public Result<InstallmentPayment, ApplicationError> handle(RegisterInstallmentPaymentCommand command) {
         if (command.purchaseId() == null || command.purchaseId().isBlank()) {
-            return Result.failure(ApplicationError.validationError("purchaseId", "Purchase id is required"));
+            return Result.failure(ApplicationError.validationError("purchaseId", "error.detail.purchase-id-required"));
         }
         var rows = repository.findAllByPurchaseId(command.purchaseId());
         var scheduled = rows.stream()
                 .filter(row -> Objects.equals(row.getPeriod(), command.period()))
                 .findFirst();
         if (scheduled.isPresent() && InstallmentPayment.PAID.equalsIgnoreCase(scheduled.get().getState())) {
-            return Result.failure(ApplicationError.conflict("InstallmentPayment", "Installment already paid"));
+            return Result.failure(ApplicationError.conflict("InstallmentPayment", "error.detail.installment-paid"));
         }
         boolean previousPending = rows.stream()
                 .anyMatch(row -> row.getPeriod() < command.period() && !InstallmentPayment.PAID.equalsIgnoreCase(row.getState()));
         if (previousPending) {
-            return Result.failure(ApplicationError.validationError("period", "The previous installment is still pending"));
+            return Result.failure(ApplicationError.validationError("period", "error.detail.previous-installment-pending"));
         }
 
         var customer = customerRepository.findByReference(command.customerId()).orElse(null);

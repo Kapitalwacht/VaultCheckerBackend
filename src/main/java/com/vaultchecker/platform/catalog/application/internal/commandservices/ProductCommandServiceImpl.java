@@ -22,7 +22,7 @@ public class ProductCommandServiceImpl implements ProductCommandService {
     @Override
     public Result<Product, ApplicationError> handle(CreateProductCommand command) {
         if (command.name() == null || command.name().isBlank()) {
-            return Result.failure(ApplicationError.validationError("name", "Product name is required"));
+            return Result.failure(ApplicationError.validationError("name", "error.detail.product-name-required"));
         }
         var product = new Product(command.productId(), command.storeId(), command.name(), command.category(),
                 command.brand(), command.supplier(), command.unit(), command.cashPrice(), command.listPrice(), command.paymentMode(),
