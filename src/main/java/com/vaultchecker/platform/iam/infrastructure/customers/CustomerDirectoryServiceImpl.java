@@ -16,18 +16,13 @@ public class CustomerDirectoryServiceImpl implements CustomerDirectoryService {
     }
 
     @Override
-    public Optional<CustomerLink> findByPhone(String phone) {
-        var digits = digitsOf(phone);
-        if (digits.isEmpty()) {
+    public Optional<CustomerLink> findByDni(String dni) {
+        if (dni == null || dni.isBlank()) {
             return Optional.empty();
         }
         return customerRepository.findAll().stream()
-                .filter(customer -> digits.equals(digitsOf(customer.getPhone())))
+                .filter(customer -> dni.trim().equals(customer.getDni()))
                 .findFirst()
                 .map(customer -> new CustomerLink(String.valueOf(customer.getId()), customer.getStoreId()));
-    }
-
-    private static String digitsOf(String phone) {
-        return phone == null ? "" : phone.replaceAll("[^0-9]", "");
     }
 }

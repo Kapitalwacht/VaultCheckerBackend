@@ -28,6 +28,9 @@ public class UserPersistenceEntity extends AuditableAbstractPersistenceEntity {
     @Column(name = "phone", length = 30)
     private String phone;
 
+    @Column(name = "dni", length = 20)
+    private String dni;
+
     @Column(name = "store_id", length = 20)
     private String storeId;
 

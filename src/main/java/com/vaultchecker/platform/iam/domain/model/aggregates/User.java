@@ -24,6 +24,8 @@ public class User extends AbstractDomainAggregateRoot<User> {
     @Setter
     private String phone;
     @Setter
+    private String dni;
+    @Setter
     private String storeId;
     @Setter
     private String customerId;

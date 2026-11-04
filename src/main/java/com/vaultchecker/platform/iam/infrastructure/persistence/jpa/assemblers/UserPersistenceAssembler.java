@@ -19,6 +19,7 @@ public final class UserPersistenceAssembler {
         domain.setPassword(entity.getPassword());
         domain.setName(entity.getName());
         domain.setPhone(entity.getPhone());
+        domain.setDni(entity.getDni());
         domain.setStoreId(entity.getStoreId());
         domain.setCustomerId(entity.getCustomerId());
         domain.setEmailVerified(entity.isEmailVerified());
@@ -44,6 +45,7 @@ public final class UserPersistenceAssembler {
         entity.setPassword(user.getPassword());
         entity.setName(user.getName());
         entity.setPhone(user.getPhone());
+        entity.setDni(user.getDni());
         entity.setStoreId(user.getStoreId());
         entity.setCustomerId(user.getCustomerId());
         entity.setEmailVerified(user.isEmailVerified());

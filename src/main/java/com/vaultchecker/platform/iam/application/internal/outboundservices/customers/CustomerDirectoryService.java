@@ -4,7 +4,7 @@ import java.util.Optional;
 
 public interface CustomerDirectoryService {
 
-    Optional<CustomerLink> findByPhone(String phone);
+    Optional<CustomerLink> findByDni(String dni);
 
     record CustomerLink(String customerId, String storeId) {
     }

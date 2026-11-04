@@ -28,6 +28,9 @@ public record SignUpResource(
         @Schema(description = "Store code the user belongs to", example = "ST-001", nullable = true)
         String storeId,
 
+        @Size(max = 20)
+        String dni,
+
         String businessName,
 
         String ruc,
