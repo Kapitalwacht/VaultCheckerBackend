@@ -59,6 +59,9 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
             return Result.failure(ApplicationError.notFound("Customer", String.valueOf(command.customerId())));
         }
         CurrentUserScope.requireStore(customer.getStoreId());
+        if (Customer.INACTIVE.equalsIgnoreCase(customer.getState())) {
+            return Result.failure(ApplicationError.validationError("customer", "error.detail.customer-inactive"));
+        }
         int months = command.months() == null ? 1 : command.months();
         if (customer.getMaxMonths() != null && months > customer.getMaxMonths()) {
             return Result.failure(ApplicationError.validationError(
