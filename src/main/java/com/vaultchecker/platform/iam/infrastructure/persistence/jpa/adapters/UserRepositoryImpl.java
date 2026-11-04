@@ -29,6 +29,11 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByRefreshTokenHash(String refreshTokenHash) {
+        return userPersistenceRepository.findByRefreshTokenHash(refreshTokenHash).map(UserPersistenceAssembler::toDomainFromPersistence);
+    }
+
+    @Override
     public List<User> findAll() {
         return userPersistenceRepository.findAll().stream().map(UserPersistenceAssembler::toDomainFromPersistence).toList();
     }

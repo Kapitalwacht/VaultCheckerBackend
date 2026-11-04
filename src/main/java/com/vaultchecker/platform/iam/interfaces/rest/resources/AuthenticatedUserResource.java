@@ -29,6 +29,9 @@ public record AuthenticatedUserResource(
         String customerId,
 
         @Schema(description = "JWT Bearer token for authentication", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-        String token
+        String token,
+
+        @Schema(description = "Long-lived token used to renew the access token")
+        String refreshToken
 ) {
 }

@@ -1,4 +1,4 @@
 package com.vaultchecker.platform.iam.domain.model.events;
 
-public record UserSignedUpEvent(Long userId, String email, String role) {
+public record UserSignedUpEvent(Long userId, String email, String role, String storeId) {
 }

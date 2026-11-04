@@ -36,6 +36,10 @@ public class User extends AbstractDomainAggregateRoot<User> {
     @Setter
     private Long recoveryExpiresAt;
     @Setter
+    private String refreshTokenHash;
+    @Setter
+    private Long refreshTokenExpiresAt;
+    @Setter
     private Set<Role> roles;
 
     public User() {
@@ -97,6 +101,20 @@ public class User extends AbstractDomainAggregateRoot<User> {
 
     public boolean isRecoveryCodeExpired(long now) {
         return recoveryExpiresAt != null && now > recoveryExpiresAt;
+    }
+
+    public void issueRefreshToken(String tokenHash, long expiresAt) {
+        this.refreshTokenHash = tokenHash;
+        this.refreshTokenExpiresAt = expiresAt;
+    }
+
+    public boolean isRefreshTokenExpired(long now) {
+        return refreshTokenExpiresAt == null || now > refreshTokenExpiresAt;
+    }
+
+    public void revokeRefreshToken() {
+        this.refreshTokenHash = null;
+        this.refreshTokenExpiresAt = null;
     }
 
     public boolean isCustomer() {

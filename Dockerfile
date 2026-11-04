@@ -28,4 +28,6 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 # - JWT_SECRET    Secret used to sign JWT tokens.
 # Optional:
 # - PORT          Port the application listens on (default 8092).
+# - JWT_EXPIRATION_MINUTES  Access token lifetime (default 15).
+# - REFRESH_EXPIRATION_DAYS Refresh token lifetime (default 7).
 # - APP_TIME_ZONE Time zone of the business day (default America/Lima).

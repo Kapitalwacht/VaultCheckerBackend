@@ -5,14 +5,17 @@ import com.vaultchecker.platform.iam.interfaces.rest.resources.GoogleSignInResou
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordRecoveryResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordResetResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.RecoveryCodeVerificationResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.RefreshTokenResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignInResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignUpResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.VerifyEmailResource;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.AuthenticatedUserResourceFromEntityAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.RefreshSessionCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.RequestPasswordRecoveryCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.ResetPasswordCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInWithGoogleCommandFromResourceAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.SignOutCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignUpCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.UserResourceFromEntityAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.VerifyEmailCommandFromResourceAssembler;
@@ -47,7 +50,7 @@ public class AuthenticationController {
         var result = userCommandService.handle(signInCommand);
         return ResponseEntityAssembler.toResponseEntityFromResult(
                 result,
-                auth -> AuthenticatedUserResourceFromEntityAssembler.toResourceFromEntity(auth.getLeft(), auth.getRight()),
+                AuthenticatedUserResourceFromEntityAssembler::toResourceFromEntity,
                 HttpStatus.OK
         );
     }
@@ -108,13 +111,35 @@ public class AuthenticationController {
         );
     }
 
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh session", description = "Exchanges a valid refresh token for a new access token and rotates the refresh token.")
+    public ResponseEntity<?> refresh(@Valid @RequestBody RefreshTokenResource resource) {
+        var result = userCommandService.handle(RefreshSessionCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                AuthenticatedUserResourceFromEntityAssembler::toResourceFromEntity,
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/sign-out")
+    @Operation(summary = "Sign out", description = "Revokes the refresh token of the session.")
+    public ResponseEntity<?> signOut(@Valid @RequestBody RefreshTokenResource resource) {
+        var result = userCommandService.handle(SignOutCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                signedOut -> new MessageResource("Signed out"),
+                HttpStatus.OK
+        );
+    }
+
     @PostMapping("/google-sign-in")
     @Operation(summary = "Google sign-in", description = "Verifies a Google OAuth access token issued to the VaultChecker client and returns a JWT token for the account with that email.")
     public ResponseEntity<?> signInWithGoogle(@Valid @RequestBody GoogleSignInResource resource) {
         var result = userCommandService.handle(SignInWithGoogleCommandFromResourceAssembler.toCommandFromResource(resource));
         return ResponseEntityAssembler.toResponseEntityFromResult(
                 result,
-                auth -> AuthenticatedUserResourceFromEntityAssembler.toResourceFromEntity(auth.getLeft(), auth.getRight()),
+                AuthenticatedUserResourceFromEntityAssembler::toResourceFromEntity,
                 HttpStatus.OK
         );
     }

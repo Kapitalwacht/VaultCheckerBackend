@@ -24,6 +24,9 @@ public class AuditLogPersistenceEntity extends AuditableAbstractPersistenceEntit
     @Column(name = "action", nullable = false, length = 120)
     private String action;
 
+    @Column(name = "store_id", length = 60)
+    private String storeId;
+
     @Column(name = "log_date", length = 20)
     private String date;
 

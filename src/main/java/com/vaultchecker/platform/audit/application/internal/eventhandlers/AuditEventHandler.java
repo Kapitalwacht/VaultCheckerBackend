@@ -18,7 +18,7 @@ public class AuditEventHandler {
 
     @EventListener
     public void on(AuditableActionRegisteredEvent event) {
-        auditLogCommandService.handle(new RecordAuditLogCommand(event.userRole(), event.action(), event.details()));
+        auditLogCommandService.handle(new RecordAuditLogCommand(event.userRole(), event.action(), event.details(), event.storeId()));
     }
 
     @EventListener
@@ -26,6 +26,7 @@ public class AuditEventHandler {
         auditLogCommandService.handle(new RecordAuditLogCommand(
                 event.role(),
                 "USER_SIGNED_UP",
-                "User %s (id=%d) registered".formatted(event.email(), event.userId())));
+                "User %s (id=%d) registered".formatted(event.email(), event.userId()),
+                event.storeId()));
     }
 }

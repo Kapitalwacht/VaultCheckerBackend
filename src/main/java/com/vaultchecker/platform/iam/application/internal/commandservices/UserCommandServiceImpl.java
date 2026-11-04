@@ -10,16 +10,19 @@ import com.vaultchecker.platform.iam.application.internal.outboundservices.token
 import com.vaultchecker.platform.iam.domain.model.aggregates.User;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangeEmailCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangePasswordCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.RefreshSessionCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.RequestPasswordRecoveryCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ResetPasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInWithGoogleCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.SignOutCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignUpCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.UpdateProfileCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.VerifyEmailCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.VerifyRecoveryCodeCommand;
 import com.vaultchecker.platform.iam.domain.model.entities.Role;
 import com.vaultchecker.platform.iam.domain.model.events.UserSignedUpEvent;
+import com.vaultchecker.platform.iam.domain.model.valueobjects.AuthenticatedSession;
 import com.vaultchecker.platform.iam.domain.model.valueobjects.RoleNameMapper;
 import com.vaultchecker.platform.shared.domain.model.events.AuditableActionRegisteredEvent;
 import com.vaultchecker.platform.iam.domain.model.valueobjects.Roles;
@@ -27,13 +30,14 @@ import com.vaultchecker.platform.iam.domain.repositories.RoleRepository;
 import com.vaultchecker.platform.iam.domain.repositories.UserRepository;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.HexFormat;
@@ -44,6 +48,8 @@ public class UserCommandServiceImpl implements UserCommandService {
 
     private static final Duration RECOVERY_CODE_TTL = Duration.ofMinutes(15);
     private static final String USER_SIGNED_IN_ACTION = "USER_SIGNED_IN";
+    private static final String USER_SIGNED_OUT_ACTION = "USER_SIGNED_OUT";
+    private static final String REFRESH_TOKEN_DIGEST = "SHA-256";
     private static final String PASSWORD_RESET_ACTION = "PASSWORD_RESET";
 
     private final UserRepository userRepository;
@@ -56,6 +62,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final CustomerDirectoryService customerDirectoryService;
     private final StoreDirectoryService storeDirectoryService;
     private final String frontendBaseUrl;
+    private final Duration refreshTokenTtl;
     private final SecureRandom random = new SecureRandom();
 
     public UserCommandServiceImpl(
@@ -68,7 +75,8 @@ public class UserCommandServiceImpl implements UserCommandService {
             GoogleIdentityService googleIdentityService,
             CustomerDirectoryService customerDirectoryService,
             StoreDirectoryService storeDirectoryService,
-            @Value("${frontend.base-url}") String frontendBaseUrl) {
+            @Value("${frontend.base-url}") String frontendBaseUrl,
+            @Value("${authorization.refresh.expiration.days}") int refreshTokenDays) {
         this.userRepository = userRepository;
         this.hashingService = hashingService;
         this.tokenService = tokenService;
@@ -79,10 +87,11 @@ public class UserCommandServiceImpl implements UserCommandService {
         this.customerDirectoryService = customerDirectoryService;
         this.storeDirectoryService = storeDirectoryService;
         this.frontendBaseUrl = frontendBaseUrl;
+        this.refreshTokenTtl = Duration.ofDays(refreshTokenDays);
     }
 
     @Override
-    public Result<ImmutablePair<User, String>, ApplicationError> handle(SignInCommand command) {
+    public Result<AuthenticatedSession, ApplicationError> handle(SignInCommand command) {
         var user = userRepository.findByEmail(command.email());
         if (user.isEmpty()) {
             return Result.failure(ApplicationError.notFound("User", command.email()));
@@ -90,7 +99,26 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (!hashingService.matches(command.password(), user.get().getPassword())) {
             return Result.failure(ApplicationError.validationError("credentials", "Invalid email or password"));
         }
-        return openSession(user.get());
+        return openSession(user.get(), true);
+    }
+
+    @Override
+    public Result<AuthenticatedSession, ApplicationError> handle(RefreshSessionCommand command) {
+        var user = userRepository.findByRefreshTokenHash(hashOf(command.refreshToken()));
+        if (user.isEmpty() || user.get().isRefreshTokenExpired(System.currentTimeMillis())) {
+            return Result.failure(ApplicationError.validationError("refreshToken", "Invalid or expired refresh token"));
+        }
+        return openSession(user.get(), false);
+    }
+
+    @Override
+    public Result<Boolean, ApplicationError> handle(SignOutCommand command) {
+        userRepository.findByRefreshTokenHash(hashOf(command.refreshToken())).ifPresent(user -> {
+            user.revokeRefreshToken();
+            userRepository.save(user);
+            recordAction(user, USER_SIGNED_OUT_ACTION, "User %s signed out".formatted(user.getEmail()));
+        });
+        return Result.success(true);
     }
 
     @Override
@@ -121,7 +149,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         return userRepository.findByEmail(command.email())
                 .<Result<User, ApplicationError>>map(savedUser -> {
                     eventPublisher.publishEvent(new UserSignedUpEvent(
-                            savedUser.getId(), savedUser.getEmail(), RoleNameMapper.toClientRole(roleName)));
+                            savedUser.getId(), savedUser.getEmail(), RoleNameMapper.toClientRole(roleName), savedUser.getStoreId()));
                     notificationService.sendVerificationEmail(savedUser.getEmail(), savedUser.getName(),
                             verificationLink(verificationToken, savedUser.getEmail()));
                     return Result.success(savedUser);
@@ -175,17 +203,14 @@ public class UserCommandServiceImpl implements UserCommandService {
             return Result.failure(ApplicationError.businessRuleViolation("code-expired", "Recovery code expired"));
         }
         user.get().resetPassword(hashingService.encode(command.newPassword()));
+        user.get().revokeRefreshToken();
         var saved = userRepository.save(user.get());
-        var role = saved.getRoles().stream().findFirst().orElse(Role.getDefaultRole());
-        eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
-                RoleNameMapper.toClientRole(role.getName()),
-                PASSWORD_RESET_ACTION,
-                "Password reset for %s".formatted(saved.getEmail())));
+        recordAction(saved, PASSWORD_RESET_ACTION, "Password reset for %s".formatted(saved.getEmail()));
         return Result.success(saved);
     }
 
     @Override
-    public Result<ImmutablePair<User, String>, ApplicationError> handle(SignInWithGoogleCommand command) {
+    public Result<AuthenticatedSession, ApplicationError> handle(SignInWithGoogleCommand command) {
         var email = googleIdentityService.verifiedEmail(command.accessToken());
         if (email.isEmpty()) {
             return Result.failure(ApplicationError.validationError("googleToken", "Invalid Google access token"));
@@ -194,7 +219,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (user.isEmpty()) {
             return Result.failure(ApplicationError.notFound("User", email.get()));
         }
-        return openSession(user.get());
+        return openSession(user.get(), true);
     }
 
     @Override
@@ -208,7 +233,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     }
 
     @Override
-    public Result<ImmutablePair<User, String>, ApplicationError> handle(ChangeEmailCommand command) {
+    public Result<AuthenticatedSession, ApplicationError> handle(ChangeEmailCommand command) {
         var user = userRepository.findByEmail(command.currentEmail());
         if (user.isEmpty()) {
             return Result.failure(ApplicationError.notFound("User", command.currentEmail()));
@@ -224,7 +249,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
         user.get().changeEmail(newEmail, verificationToken);
         var saved = userRepository.save(user.get());
-        return Result.success(ImmutablePair.of(saved, tokenService.generateToken(saved.getEmail())));
+        return Result.success(issueSession(saved));
     }
 
     @Override
@@ -245,26 +270,41 @@ public class UserCommandServiceImpl implements UserCommandService {
         return RoleNameMapper.fromClientRole(requestedRole, Role.getDefaultRole().getName());
     }
 
-    private Result<ImmutablePair<User, String>, ApplicationError> openSession(User user) {
+    private Result<AuthenticatedSession, ApplicationError> openSession(User user, boolean audited) {
         var linked = linkCustomerRecord(user);
         if (linked.isStoreAdmin() && storeDirectoryService.isInactive(linked.getStoreId())) {
             return Result.failure(ApplicationError.conflict("Store", "The store was deactivated"));
         }
-        var token = tokenService.generateToken(linked.getEmail());
-        recordSignIn(linked);
-        return Result.success(ImmutablePair.of(linked, token));
+        if (audited) {
+            recordAction(linked, USER_SIGNED_IN_ACTION, "User %s signed in".formatted(linked.getEmail()));
+        }
+        return Result.success(issueSession(linked));
+    }
+
+    private AuthenticatedSession issueSession(User user) {
+        var refreshToken = generateToken();
+        user.issueRefreshToken(hashOf(refreshToken), expiryAfter(refreshTokenTtl));
+        var saved = userRepository.save(user);
+        return new AuthenticatedSession(saved, tokenService.generateToken(saved.getEmail()), refreshToken);
+    }
+
+    private static String hashOf(String token) {
+        try {
+            var digest = MessageDigest.getInstance(REFRESH_TOKEN_DIGEST).digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private boolean systemAdminExists() {
         return userRepository.findAll().stream().anyMatch(User::isSystemAdmin);
     }
 
-    private void recordSignIn(User user) {
+    private void recordAction(User user, String action, String details) {
         var role = user.getRoles().stream().findFirst().orElse(Role.getDefaultRole());
         eventPublisher.publishEvent(new AuditableActionRegisteredEvent(
-                RoleNameMapper.toClientRole(role.getName()),
-                USER_SIGNED_IN_ACTION,
-                "User %s signed in".formatted(user.getEmail())));
+                RoleNameMapper.toClientRole(role.getName()), action, details, user.getStoreId()));
     }
 
     private User linkCustomerRecord(User user) {

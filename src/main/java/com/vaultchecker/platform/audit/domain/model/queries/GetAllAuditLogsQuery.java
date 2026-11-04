@@ -1,4 +1,4 @@
 package com.vaultchecker.platform.audit.domain.model.queries;
 
-public record GetAllAuditLogsQuery(String date) {
+public record GetAllAuditLogsQuery(String date, String storeId) {
 }

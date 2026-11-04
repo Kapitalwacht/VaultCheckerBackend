@@ -10,6 +10,8 @@ public interface UserRepository {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByRefreshTokenHash(String refreshTokenHash);
+
     List<User> findAll();
 
     User save(User user);

@@ -17,7 +17,7 @@ public class AuditLogCommandServiceImpl implements AuditLogCommandService {
 
     @Override
     public AuditLog handle(RecordAuditLogCommand command) {
-        var auditLog = new AuditLog(command.userRole(), command.action(), command.details());
+        var auditLog = new AuditLog(command.userRole(), command.action(), command.details(), command.storeId());
         return auditLogRepository.save(auditLog);
     }
 }

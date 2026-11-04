@@ -18,6 +18,7 @@ public final class AuditLogPersistenceAssembler {
         log.setDate(entity.getDate());
         log.setTime(entity.getTime());
         log.setDetails(entity.getDetails());
+        log.setStoreId(entity.getStoreId());
         return log;
     }
 
@@ -33,6 +34,7 @@ public final class AuditLogPersistenceAssembler {
         entity.setDate(log.getDate());
         entity.setTime(log.getTime());
         entity.setDetails(log.getDetails());
+        entity.setStoreId(log.getStoreId());
         return entity;
     }
 }

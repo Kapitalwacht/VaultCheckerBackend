@@ -21,10 +21,13 @@ public class AuditLogQueryServiceImpl implements AuditLogQueryService {
 
     @Override
     public List<AuditLog> handle(GetAllAuditLogsQuery query) {
-        if (query.date() != null && !query.date().isBlank()) {
-            return auditLogRepository.findAllByDate(query.date());
+        var logs = query.date() != null && !query.date().isBlank()
+                ? auditLogRepository.findAllByDate(query.date())
+                : auditLogRepository.findAll();
+        if (query.storeId() == null) {
+            return logs;
         }
-        return auditLogRepository.findAll();
+        return logs.stream().filter(log -> query.storeId().equals(log.getStoreId())).toList();
     }
 
     @Override

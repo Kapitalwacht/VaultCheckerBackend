@@ -46,6 +46,12 @@ public class UserPersistenceEntity extends AuditableAbstractPersistenceEntity {
     @Column(name = "recovery_expires_at")
     private Long recoveryExpiresAt;
 
+    @Column(name = "refresh_token_hash", length = 64)
+    private String refreshTokenHash;
+
+    @Column(name = "refresh_token_expires_at")
+    private Long refreshTokenExpiresAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),

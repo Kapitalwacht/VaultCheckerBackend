@@ -27,8 +27,8 @@ public class TokenServiceImpl implements BearerTokenService {
     @Value("${authorization.jwt.secret}")
     private String secret;
 
-    @Value("${authorization.jwt.expiration.days}")
-    private int expirationDays;
+    @Value("${authorization.jwt.expiration.minutes}")
+    private int expirationMinutes;
 
     @Override
     public String generateToken(Authentication authentication) {
@@ -42,7 +42,7 @@ public class TokenServiceImpl implements BearerTokenService {
 
     private String buildTokenWithDefaultParameters(String username) {
         var issuedAt = new Date();
-        var expiration = DateUtils.addDays(issuedAt, expirationDays);
+        var expiration = DateUtils.addMinutes(issuedAt, expirationMinutes);
         var key = getSigningKey();
         return Jwts.builder()
                 .subject(username)

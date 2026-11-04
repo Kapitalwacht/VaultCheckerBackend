@@ -22,6 +22,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +55,7 @@ public class UsersController {
     }
 
     @GetMapping(value = "/{userId}")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     @Operation(summary = "Get user by ID", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<UserResource> getUserById(@PathVariable Long userId) {
         var user = userQueryService.handle(new GetUserByIdQuery(userId));
@@ -83,7 +85,7 @@ public class UsersController {
         var command = ChangeEmailCommandFromResourceAssembler.toCommandFromResource(principal.getUsername(), resource);
         return ResponseEntityAssembler.toResponseEntityFromResult(
                 userCommandService.handle(command),
-                auth -> AuthenticatedUserResourceFromEntityAssembler.toResourceFromEntity(auth.getLeft(), auth.getRight()),
+                AuthenticatedUserResourceFromEntityAssembler::toResourceFromEntity,
                 HttpStatus.OK
         );
     }

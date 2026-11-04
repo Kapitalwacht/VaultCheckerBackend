@@ -24,14 +24,17 @@ public class AuditLog extends AbstractDomainAggregateRoot<AuditLog> {
     private String time;
     @Setter
     private String details;
+    @Setter
+    private String storeId;
 
     public AuditLog() {
     }
 
-    public AuditLog(String userRole, String action, String details) {
+    public AuditLog(String userRole, String action, String details, String storeId) {
         this.userRole = userRole;
         this.action = action;
         this.details = details;
+        this.storeId = storeId;
         this.date = LocalDate.now().toString();
         this.time = LocalTime.now().withNano(0).toString();
     }

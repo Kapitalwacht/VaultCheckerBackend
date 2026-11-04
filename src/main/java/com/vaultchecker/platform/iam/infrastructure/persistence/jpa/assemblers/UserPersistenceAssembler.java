@@ -25,6 +25,8 @@ public final class UserPersistenceAssembler {
         domain.setVerificationToken(entity.getVerificationToken());
         domain.setRecoveryCode(entity.getRecoveryCode());
         domain.setRecoveryExpiresAt(entity.getRecoveryExpiresAt());
+        domain.setRefreshTokenHash(entity.getRefreshTokenHash());
+        domain.setRefreshTokenExpiresAt(entity.getRefreshTokenExpiresAt());
         domain.setRoles(entity.getRoles().stream()
                 .map(RolePersistenceAssembler::toDomainFromPersistence)
                 .collect(Collectors.toSet()));
@@ -48,6 +50,8 @@ public final class UserPersistenceAssembler {
         entity.setVerificationToken(user.getVerificationToken());
         entity.setRecoveryCode(user.getRecoveryCode());
         entity.setRecoveryExpiresAt(user.getRecoveryExpiresAt());
+        entity.setRefreshTokenHash(user.getRefreshTokenHash());
+        entity.setRefreshTokenExpiresAt(user.getRefreshTokenExpiresAt());
         entity.setRoles(user.getRoles() == null
                 ? new HashSet<>()
                 : user.getRoles().stream()
