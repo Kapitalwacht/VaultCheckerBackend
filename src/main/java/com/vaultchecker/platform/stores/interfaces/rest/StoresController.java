@@ -54,7 +54,6 @@ public class StoresController {
 
     @PostMapping
     @Operation(summary = "Register a new store", security = @SecurityRequirement(name = "bearerAuth"))
-    @PreAuthorize("hasRole('SYSTEM_ADMIN') or #resource.storeId() == authentication.principal.storeId")
     public ResponseEntity<?> createStore(@Valid @RequestBody CreateStoreResource resource) {
         var command = CreateStoreCommandFromResourceAssembler.toCommandFromResource(resource);
         var result = storeCommandService.handle(command);

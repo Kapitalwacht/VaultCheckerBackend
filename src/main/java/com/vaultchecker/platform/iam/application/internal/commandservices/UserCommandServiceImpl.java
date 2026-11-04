@@ -12,6 +12,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.ChangeEmailCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangePasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.RefreshSessionCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.RequestPasswordRecoveryCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.ResendVerificationCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ResetPasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInWithGoogleCommand;
@@ -63,6 +64,7 @@ public class UserCommandServiceImpl implements UserCommandService {
     private final StoreDirectoryService storeDirectoryService;
     private final String frontendBaseUrl;
     private final Duration refreshTokenTtl;
+    private final boolean emailVerificationRequired;
     private final SecureRandom random = new SecureRandom();
 
     public UserCommandServiceImpl(
@@ -76,7 +78,8 @@ public class UserCommandServiceImpl implements UserCommandService {
             CustomerDirectoryService customerDirectoryService,
             StoreDirectoryService storeDirectoryService,
             @Value("${frontend.base-url}") String frontendBaseUrl,
-            @Value("${authorization.refresh.expiration.days}") int refreshTokenDays) {
+            @Value("${authorization.refresh.expiration.days}") int refreshTokenDays,
+            @Value("${app.email-verification.required}") boolean emailVerificationRequired) {
         this.userRepository = userRepository;
         this.hashingService = hashingService;
         this.tokenService = tokenService;
@@ -88,6 +91,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         this.storeDirectoryService = storeDirectoryService;
         this.frontendBaseUrl = frontendBaseUrl;
         this.refreshTokenTtl = Duration.ofDays(refreshTokenDays);
+        this.emailVerificationRequired = emailVerificationRequired;
     }
 
     @Override
@@ -98,6 +102,9 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
         if (!hashingService.matches(command.password(), user.get().getPassword())) {
             return Result.failure(ApplicationError.validationError("credentials", "Invalid email or password"));
+        }
+        if (emailVerificationRequired && !user.get().isEmailVerified()) {
+            return Result.failure(ApplicationError.forbidden("The email is not verified"));
         }
         return openSession(user.get(), true);
     }
@@ -132,13 +139,25 @@ public class UserCommandServiceImpl implements UserCommandService {
             return Result.failure(ApplicationError.forbidden("A system administrator already exists"));
         }
 
+        var storeId = command.storeId();
+        boolean registersStore = roleName == Roles.ROLE_STORE_ADMIN && storeId != null && !storeId.isBlank();
+        if (registersStore && storeDirectoryService.exists(storeId)) {
+            return Result.failure(ApplicationError.conflict("Store", "The store already has an administrator"));
+        }
+        if (registersStore && command.ruc() != null && !command.ruc().isBlank()
+                && storeDirectoryService.isRucTaken(command.ruc())) {
+            return Result.failure(ApplicationError.conflict("Store", "A store with the same RUC already exists"));
+        }
+
         var role = roleRepository.findByName(roleName)
                 .orElseGet(() -> roleRepository.save(new Role(roleName)));
 
         var user = new User(command.email(), hashingService.encode(command.password()), List.of(role));
         user.setName(command.name());
         user.setPhone(command.phone());
-        user.setStoreId(command.storeId());
+        if (!user.isCustomer()) {
+            user.setStoreId(storeId);
+        }
         if (user.isCustomer()) {
             customerDirectoryService.findByPhone(user.getPhone())
                     .ifPresent(link -> user.linkCustomer(link.customerId(), link.storeId()));
@@ -146,6 +165,10 @@ public class UserCommandServiceImpl implements UserCommandService {
         var verificationToken = generateToken();
         user.issueVerificationToken(verificationToken);
         userRepository.save(user);
+        if (registersStore && command.businessName() != null && !command.businessName().isBlank()) {
+            storeDirectoryService.register(storeId, command.ruc(), command.businessName(), command.category(),
+                    command.phone(), command.email());
+        }
         return userRepository.findByEmail(command.email())
                 .<Result<User, ApplicationError>>map(savedUser -> {
                     eventPublisher.publishEvent(new UserSignedUpEvent(
@@ -164,6 +187,20 @@ public class UserCommandServiceImpl implements UserCommandService {
             return Result.failure(ApplicationError.validationError("token", "Invalid verification token"));
         }
         return Result.success(userRepository.save(user.get()));
+    }
+
+    @Override
+    public Result<Boolean, ApplicationError> handle(ResendVerificationCommand command) {
+        userRepository.findByEmail(command.email())
+                .filter(user -> !user.isEmailVerified())
+                .ifPresent(user -> {
+                    var verificationToken = generateToken();
+                    user.issueVerificationToken(verificationToken);
+                    var saved = userRepository.save(user);
+                    notificationService.sendVerificationEmail(saved.getEmail(), saved.getName(),
+                            verificationLink(verificationToken, saved.getEmail()));
+                });
+        return Result.success(true);
     }
 
     @Override
@@ -204,6 +241,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
         user.get().resetPassword(hashingService.encode(command.newPassword()));
         user.get().revokeRefreshToken();
+        user.get().markEmailVerified();
         var saved = userRepository.save(user.get());
         recordAction(saved, PASSWORD_RESET_ACTION, "Password reset for %s".formatted(saved.getEmail()));
         return Result.success(saved);
@@ -219,6 +257,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (user.isEmpty()) {
             return Result.failure(ApplicationError.notFound("User", email.get()));
         }
+        user.get().markEmailVerified();
         return openSession(user.get(), true);
     }
 

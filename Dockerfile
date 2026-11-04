@@ -30,4 +30,5 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 # - PORT          Port the application listens on (default 8092).
 # - JWT_EXPIRATION_MINUTES  Access token lifetime (default 15).
 # - REFRESH_EXPIRATION_DAYS Refresh token lifetime (default 7).
+# - EMAIL_VERIFICATION_REQUIRED Set to false to allow sign-in without a verified email.
 # - APP_TIME_ZONE Time zone of the business day (default America/Lima).

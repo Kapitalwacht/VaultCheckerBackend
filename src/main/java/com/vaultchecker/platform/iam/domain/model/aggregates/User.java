@@ -117,6 +117,10 @@ public class User extends AbstractDomainAggregateRoot<User> {
         this.refreshTokenExpiresAt = null;
     }
 
+    public void markEmailVerified() {
+        this.emailVerified = true;
+    }
+
     public boolean isCustomer() {
         return hasRole(Roles.ROLE_CUSTOMER);
     }

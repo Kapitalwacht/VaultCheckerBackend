@@ -6,12 +6,14 @@ import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordRecoveryR
 import com.vaultchecker.platform.iam.interfaces.rest.resources.PasswordResetResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.RecoveryCodeVerificationResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.RefreshTokenResource;
+import com.vaultchecker.platform.iam.interfaces.rest.resources.ResendVerificationResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignInResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.SignUpResource;
 import com.vaultchecker.platform.iam.interfaces.rest.resources.VerifyEmailResource;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.AuthenticatedUserResourceFromEntityAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.RefreshSessionCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.RequestPasswordRecoveryCommandFromResourceAssembler;
+import com.vaultchecker.platform.iam.interfaces.rest.transform.ResendVerificationCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.ResetPasswordCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInCommandFromResourceAssembler;
 import com.vaultchecker.platform.iam.interfaces.rest.transform.SignInWithGoogleCommandFromResourceAssembler;
@@ -74,6 +76,17 @@ public class AuthenticationController {
         return ResponseEntityAssembler.toResponseEntityFromResult(
                 result,
                 UserResourceFromEntityAssembler::toResourceFromEntity,
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/resend-verification")
+    @Operation(summary = "Resend verification email", description = "Sends a new verification link when the account is not verified yet.")
+    public ResponseEntity<?> resendVerification(@Valid @RequestBody ResendVerificationResource resource) {
+        var result = userCommandService.handle(ResendVerificationCommandFromResourceAssembler.toCommandFromResource(resource));
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                sent -> new MessageResource("Verification email sent"),
                 HttpStatus.OK
         );
     }

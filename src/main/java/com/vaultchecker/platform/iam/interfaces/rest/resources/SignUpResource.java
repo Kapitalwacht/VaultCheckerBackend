@@ -26,6 +26,12 @@ public record SignUpResource(
         String phone,
 
         @Schema(description = "Store code the user belongs to", example = "ST-001", nullable = true)
-        String storeId
+        String storeId,
+
+        String businessName,
+
+        String ruc,
+
+        String category
 ) {
 }

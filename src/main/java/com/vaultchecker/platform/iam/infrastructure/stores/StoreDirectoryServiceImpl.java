@@ -20,4 +20,19 @@ public class StoreDirectoryServiceImpl implements StoreDirectoryService {
                 .anyMatch(store -> store.getStoreId() != null && store.getStoreId().equals(storeId)
                         && Store.INACTIVE.equalsIgnoreCase(store.getState()));
     }
+
+    @Override
+    public boolean exists(String storeId) {
+        return storeRepository.existsByStoreId(storeId);
+    }
+
+    @Override
+    public boolean isRucTaken(String ruc) {
+        return storeRepository.existsByRuc(ruc);
+    }
+
+    @Override
+    public void register(String storeId, String ruc, String businessName, String category, String phone, String email) {
+        storeRepository.save(new Store(storeId, ruc, businessName, category, null, phone, email, null));
+    }
 }

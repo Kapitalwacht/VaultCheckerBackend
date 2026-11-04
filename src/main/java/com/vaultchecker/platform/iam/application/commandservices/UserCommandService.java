@@ -5,6 +5,7 @@ import com.vaultchecker.platform.iam.domain.model.commands.ChangeEmailCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ChangePasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.RefreshSessionCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.RequestPasswordRecoveryCommand;
+import com.vaultchecker.platform.iam.domain.model.commands.ResendVerificationCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.ResetPasswordCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInCommand;
 import com.vaultchecker.platform.iam.domain.model.commands.SignInWithGoogleCommand;
@@ -28,6 +29,8 @@ public interface UserCommandService {
     Result<User, ApplicationError> handle(SignUpCommand command);
 
     Result<User, ApplicationError> handle(VerifyEmailCommand command);
+
+    Result<Boolean, ApplicationError> handle(ResendVerificationCommand command);
 
     Result<User, ApplicationError> handle(RequestPasswordRecoveryCommand command);
 
