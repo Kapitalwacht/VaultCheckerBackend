@@ -6,6 +6,7 @@ import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayme
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
 import com.vaultchecker.platform.credit.domain.model.commands.RegisterPurchaseCommand;
 import com.vaultchecker.platform.credit.domain.model.valueobjects.AmortizationInstallment;
+import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditTerms;
 import com.vaultchecker.platform.credit.domain.repositories.CreditAccountRepository;
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
@@ -82,6 +83,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         var purchase = new Purchase(command.purchaseId(), command.storeId(), command.customerId(),
                 command.productId(), command.description(), command.quantity(), command.amount(),
                 command.purchaseDate(), command.months(), command.state());
+        purchase.setTerms(CreditTerms.from(customer));
         var savedPurchase = purchaseRepository.save(purchase);
 
         if (months <= 1) {

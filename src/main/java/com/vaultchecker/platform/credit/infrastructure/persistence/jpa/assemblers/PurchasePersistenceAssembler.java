@@ -1,6 +1,7 @@
 package com.vaultchecker.platform.credit.infrastructure.persistence.jpa.assemblers;
 
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
+import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditTerms;
 import com.vaultchecker.platform.credit.infrastructure.persistence.jpa.entities.PurchasePersistenceEntity;
 
 public final class PurchasePersistenceAssembler {
@@ -22,6 +23,11 @@ public final class PurchasePersistenceAssembler {
         purchase.setPurchaseDate(entity.getPurchaseDate());
         purchase.setMonths(entity.getMonths());
         purchase.setState(entity.getState());
+        if (entity.getRateValue() != null) {
+            purchase.setTerms(new CreditTerms(entity.getRateType(), entity.getRateValue(), entity.getRatePeriodDays(),
+                    entity.getRateCapitalizationDays(), entity.getMoratoriumRateType(), entity.getMoratoriumRateValue(),
+                    entity.getCutoffDay(), entity.getPaymentDay()));
+        }
         return purchase;
     }
 
@@ -41,6 +47,17 @@ public final class PurchasePersistenceAssembler {
         entity.setPurchaseDate(purchase.getPurchaseDate());
         entity.setMonths(purchase.getMonths());
         entity.setState(purchase.getState());
+        if (purchase.getTerms() != null) {
+            var terms = purchase.getTerms();
+            entity.setRateType(terms.rateType());
+            entity.setRateValue(terms.rateValue());
+            entity.setRatePeriodDays(terms.ratePeriodDays());
+            entity.setRateCapitalizationDays(terms.rateCapitalizationDays());
+            entity.setMoratoriumRateType(terms.moratoriumRateType());
+            entity.setMoratoriumRateValue(terms.moratoriumRateValue());
+            entity.setCutoffDay(terms.cutoffDay());
+            entity.setPaymentDay(terms.paymentDay());
+        }
         return entity;
     }
 }

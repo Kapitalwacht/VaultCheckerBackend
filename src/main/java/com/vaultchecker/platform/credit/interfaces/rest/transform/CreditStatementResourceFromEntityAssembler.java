@@ -18,6 +18,7 @@ public class CreditStatementResourceFromEntityAssembler {
         return new CreditStatementResource(
                 statement.customerId(),
                 statement.storeId(),
+                statement.currency(),
                 statement.cutoffDate(),
                 statement.paymentDate(),
                 lines,

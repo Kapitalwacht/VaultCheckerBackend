@@ -7,6 +7,7 @@ import java.util.List;
 public record CreditStatement(
         String customerId,
         String storeId,
+        String currency,
         LocalDate cutoffDate,
         LocalDate paymentDate,
         List<Line> lines,

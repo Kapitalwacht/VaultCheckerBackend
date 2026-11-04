@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.credit.domain.model.aggregates;
 
+import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditTerms;
 import com.vaultchecker.platform.shared.domain.model.aggregates.AbstractDomainAggregateRoot;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,8 +22,13 @@ public class Purchase extends AbstractDomainAggregateRoot<Purchase> {
     @Setter private LocalDate purchaseDate;
     @Setter private Integer months;
     @Setter private String state;
+    @Setter private CreditTerms terms;
 
     public static final String ACTIVE = "active";
+
+    public CreditTerms termsOr(CreditTerms fallback) {
+        return terms != null ? terms : fallback;
+    }
 
     public Purchase() {
         this.quantity = 1;

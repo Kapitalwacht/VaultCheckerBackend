@@ -4,10 +4,10 @@ import com.vaultchecker.platform.credit.application.commandservices.InstallmentP
 import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayment;
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
 import com.vaultchecker.platform.credit.domain.model.commands.RegisterInstallmentPaymentCommand;
+import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditTerms;
 import com.vaultchecker.platform.credit.domain.repositories.CreditAccountRepository;
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
-import com.vaultchecker.platform.credit.domain.services.CreditCycle;
 import com.vaultchecker.platform.credit.domain.services.InterestCalculator;
 import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
@@ -62,9 +62,13 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
 
         var customer = customerRepository.findByReference(command.customerId()).orElse(null);
         CurrentUserScope.requireStore(customer != null ? customer.getStoreId() : command.storeId());
-        var payment = scheduled.orElseGet(() -> singlePaymentRow(command, customer));
+        var purchase = purchaseRepository.findAllByCustomerId(command.customerId()).stream()
+                .filter(item -> command.purchaseId().equals(item.getPurchaseId()))
+                .findFirst().orElse(null);
+        var terms = agreedTerms(purchase, customer);
+        var payment = scheduled.orElseGet(() -> singlePaymentRow(command, purchase, terms));
         var paidDate = command.paidDate() != null ? command.paidDate() : LocalDate.now();
-        var lateFee = lateFee(payment, customer, paidDate);
+        var lateFee = lateFee(payment, terms, paidDate);
         payment.setPaidDate(paidDate);
         payment.setLateFee(lateFee);
         payment.setTotal(InterestCalculator.scaleMoney(payment.getInstallment().add(lateFee)));
@@ -77,45 +81,41 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
         return Result.success(saved);
     }
 
-    private InstallmentPayment singlePaymentRow(RegisterInstallmentPaymentCommand command, Customer customer) {
+    private static CreditTerms agreedTerms(Purchase purchase, Customer customer) {
+        var customerTerms = customer != null ? CreditTerms.from(customer) : null;
+        return purchase != null ? purchase.termsOr(customerTerms) : customerTerms;
+    }
+
+    private InstallmentPayment singlePaymentRow(RegisterInstallmentPaymentCommand command, Purchase purchase, CreditTerms terms) {
         var payment = new InstallmentPayment();
         payment.setPaymentId(command.paymentId());
         payment.setStoreId(command.storeId());
         payment.setCustomerId(command.customerId());
         payment.setPurchaseId(command.purchaseId());
         payment.setPeriod(command.period());
-        var purchase = purchaseRepository.findAllByCustomerId(command.customerId()).stream()
-                .filter(item -> command.purchaseId().equals(item.getPurchaseId()))
-                .findFirst().orElse(null);
-        if (purchase == null || customer == null) {
-            return payment;
+        if (purchase != null && terms != null) {
+            fillSinglePayment(payment, purchase, terms);
         }
-        fillSinglePayment(payment, purchase, customer);
         return payment;
     }
 
-    private void fillSinglePayment(InstallmentPayment payment, Purchase purchase, Customer customer) {
-        var dueDate = CreditCycle.graceEndDate(purchase.getPurchaseDate(),
-                CreditCycle.cutoffDayOf(customer.getCutoffDay()), CreditCycle.paymentDayOf(customer.getPaymentDay()));
+    private void fillSinglePayment(InstallmentPayment payment, Purchase purchase, CreditTerms terms) {
+        var dueDate = terms.firstPaymentDate(purchase.getPurchaseDate());
         int days = (int) ChronoUnit.DAYS.between(purchase.getPurchaseDate(), dueDate);
-        var rate = CreditCycle.effectiveAnnualRate(customer.getRateType(), customer.getRateValue(),
-                customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
         var principal = InterestCalculator.scaleMoney(purchase.getAmount());
-        var interest = InterestCalculator.compensatoryInterest(purchase.getAmount(), rate, days);
+        var interest = InterestCalculator.compensatoryInterest(purchase.getAmount(), terms.compensatoryRate(), days);
         payment.setScheduledDate(dueDate);
         payment.setPrincipal(principal);
         payment.setInterest(interest);
         payment.setInstallment(principal.add(interest));
     }
 
-    private BigDecimal lateFee(InstallmentPayment payment, Customer customer, LocalDate paidDate) {
-        if (customer == null || payment.getScheduledDate() == null) {
+    private BigDecimal lateFee(InstallmentPayment payment, CreditTerms terms, LocalDate paidDate) {
+        if (terms == null || payment.getScheduledDate() == null) {
             return InterestCalculator.scaleMoney(BigDecimal.ZERO);
         }
         int daysLate = (int) ChronoUnit.DAYS.between(payment.getScheduledDate(), paidDate);
-        var moratoryRate = CreditCycle.effectiveAnnualRate(customer.getMoratoriumRateType(), customer.getMoratoriumRateValue(),
-                customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
-        return InterestCalculator.moratoryInterest(payment.getInstallment(), moratoryRate, daysLate);
+        return InterestCalculator.moratoryInterest(payment.getInstallment(), terms.moratoryRate(), daysLate);
     }
 
     private void reduceCustomerBalance(String customerId, BigDecimal principal) {

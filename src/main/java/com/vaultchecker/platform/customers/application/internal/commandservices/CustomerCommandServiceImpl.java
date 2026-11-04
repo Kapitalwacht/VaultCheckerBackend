@@ -1,6 +1,7 @@
 package com.vaultchecker.platform.customers.application.internal.commandservices;
 
 import com.vaultchecker.platform.customers.application.commandservices.CustomerCommandService;
+import com.vaultchecker.platform.customers.application.internal.outboundservices.credit.CreditAccountDirectoryService;
 import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.domain.model.commands.CreateCustomerCommand;
 import com.vaultchecker.platform.customers.domain.model.commands.DeleteCustomerCommand;
@@ -14,9 +15,12 @@ import org.springframework.stereotype.Service;
 public class CustomerCommandServiceImpl implements CustomerCommandService {
 
     private final CustomerRepository customerRepository;
+    private final CreditAccountDirectoryService creditAccountDirectoryService;
 
-    public CustomerCommandServiceImpl(CustomerRepository customerRepository) {
+    public CustomerCommandServiceImpl(CustomerRepository customerRepository,
+                                      CreditAccountDirectoryService creditAccountDirectoryService) {
         this.customerRepository = customerRepository;
+        this.creditAccountDirectoryService = creditAccountDirectoryService;
     }
 
     @Override
@@ -39,6 +43,10 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
             return Result.failure(ApplicationError.notFound("Customer", String.valueOf(command.id())));
         }
         var customer = existing.get();
+        boolean currencyChanged = command.currency() != null && !command.currency().equals(customer.getCurrency());
+        if (currencyChanged && creditAccountDirectoryService.hasDebt(customer.getId())) {
+            return Result.failure(ApplicationError.conflict("CustomerCurrency", "The currency cannot change while the customer has debt"));
+        }
         customer.setCustomerId(command.customerId());
         customer.setStoreId(command.storeId());
         customer.setFirstName(command.firstName());
@@ -53,13 +61,18 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
         if (command.state() != null && !command.state().isBlank()) {
             customer.setState(command.state());
         }
-        return Result.success(customerRepository.save(customer));
+        var saved = customerRepository.save(customer);
+        creditAccountDirectoryService.updateCreditLimit(saved.getId(), saved.getCreditLimit());
+        return Result.success(saved);
     }
 
     @Override
     public Result<Boolean, ApplicationError> handle(DeleteCustomerCommand command) {
         if (!customerRepository.existsById(command.id())) {
             return Result.failure(ApplicationError.notFound("Customer", String.valueOf(command.id())));
+        }
+        if (creditAccountDirectoryService.hasDebt(command.id())) {
+            return Result.failure(ApplicationError.conflict("CustomerDebt", "A customer with debt cannot be deleted"));
         }
         customerRepository.deleteById(command.id());
         return Result.success(true);

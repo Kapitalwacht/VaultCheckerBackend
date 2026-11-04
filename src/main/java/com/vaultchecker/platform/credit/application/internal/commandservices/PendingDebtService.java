@@ -3,9 +3,9 @@ package com.vaultchecker.platform.credit.application.internal.commandservices;
 import com.vaultchecker.platform.credit.domain.model.aggregates.CreditAccount;
 import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayment;
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
+import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditTerms;
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
-import com.vaultchecker.platform.credit.domain.services.CreditCycle;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
 import org.springframework.stereotype.Service;
 
@@ -54,8 +54,7 @@ public class PendingDebtService {
             return Stream.empty();
         }
         return customerRepository.findByReference(customerId)
-                .map(customer -> Stream.of(CreditCycle.graceEndDate(purchase.getPurchaseDate(),
-                        CreditCycle.cutoffDayOf(customer.getCutoffDay()), CreditCycle.paymentDayOf(customer.getPaymentDay()))))
-                .orElseGet(Stream::empty);
+                .map(customer -> purchase.termsOr(CreditTerms.from(customer)).firstPaymentDate(purchase.getPurchaseDate()))
+                .stream();
     }
 }

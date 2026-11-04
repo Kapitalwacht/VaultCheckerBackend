@@ -47,4 +47,28 @@ public class PurchasePersistenceEntity extends AuditableAbstractPersistenceEntit
 
     @Column(name = "state", nullable = false, length = 20)
     private String state;
+
+    @Column(name = "rate_type", length = 20)
+    private String rateType;
+
+    @Column(name = "rate_value", precision = 12, scale = 7)
+    private BigDecimal rateValue;
+
+    @Column(name = "rate_period_days")
+    private Integer ratePeriodDays;
+
+    @Column(name = "rate_capitalization_days")
+    private Integer rateCapitalizationDays;
+
+    @Column(name = "moratorium_rate_type", length = 20)
+    private String moratoriumRateType;
+
+    @Column(name = "moratorium_rate_value", precision = 12, scale = 7)
+    private BigDecimal moratoriumRateValue;
+
+    @Column(name = "cutoff_day")
+    private Integer cutoffDay;
+
+    @Column(name = "payment_day")
+    private Integer paymentDay;
 }

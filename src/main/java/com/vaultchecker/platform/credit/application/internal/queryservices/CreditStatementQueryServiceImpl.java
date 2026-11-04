@@ -5,6 +5,7 @@ import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayme
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
 import com.vaultchecker.platform.credit.domain.model.queries.GetCreditStatementQuery;
 import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditStatement;
+import com.vaultchecker.platform.credit.domain.model.valueobjects.CreditTerms;
 import com.vaultchecker.platform.credit.domain.repositories.CreditAccountRepository;
 import com.vaultchecker.platform.credit.domain.repositories.InstallmentPaymentRepository;
 import com.vaultchecker.platform.credit.domain.repositories.PurchaseRepository;
@@ -18,7 +19,9 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -57,12 +60,8 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
         int paymentDay = CreditCycle.paymentDayOf(customer.getPaymentDay());
         var paymentDate = CreditCycle.graceEndDate(cutoffDate, cutoffDay, paymentDay);
 
-        var compensatoryRate = CreditCycle.effectiveAnnualRate(
-                customer.getRateType(), customer.getRateValue(),
-                customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
-        var moratoryRate = CreditCycle.effectiveAnnualRate(
-                customer.getMoratoriumRateType(), customer.getMoratoriumRateValue(),
-                customer.getRatePeriodDays(), customer.getRateCapitalizationDays());
+        var customerTerms = CreditTerms.from(customer);
+        Map<String, BigDecimal> moratoryRates = new HashMap<>();
 
         List<CreditStatement.Line> lines = new ArrayList<>();
         var purchases = purchaseRepository.findAllByCustomerId(customerId).stream()
@@ -72,8 +71,10 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
         for (Purchase purchase : purchases) {
             var installments = installmentPaymentRepository.findAllByPurchaseId(purchase.getPurchaseId());
             int months = purchase.getMonths() == null ? 1 : purchase.getMonths();
+            var terms = purchase.termsOr(customerTerms);
+            moratoryRates.put(purchase.getPurchaseId(), terms.moratoryRate());
             if (months <= 1) {
-                singlePaymentLine(purchase, installments, compensatoryRate, cutoffDay, paymentDay, paymentDate)
+                singlePaymentLine(purchase, installments, terms, paymentDate)
                         .ifPresent(lines::add);
             } else {
                 installments.stream()
@@ -94,6 +95,7 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
                 .filter(line -> line.dueDate().isBefore(paymentDate))
                 .map(line -> {
                     int daysLate = (int) ChronoUnit.DAYS.between(line.dueDate(), paymentDate);
+                    var moratoryRate = moratoryRates.get(line.purchaseId());
                     return new CreditStatement.LateFee(
                             line.purchaseId(), line.description(), line.period(), line.dueDate(), daysLate,
                             line.total(), InterestCalculator.effectiveRateForDays(moratoryRate, daysLate),
@@ -109,6 +111,7 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
         return Optional.of(new CreditStatement(
                 customerId,
                 account != null ? account.getStoreId() : customer.getStoreId(),
+                customer.getCurrency(),
                 cutoffDate,
                 paymentDate,
                 lines,
@@ -120,17 +123,16 @@ public class CreditStatementQueryServiceImpl implements CreditStatementQueryServ
     }
 
     private Optional<CreditStatement.Line> singlePaymentLine(Purchase purchase, List<InstallmentPayment> installments,
-                                                             BigDecimal compensatoryRate, int cutoffDay, int paymentDay,
-                                                             LocalDate paymentDate) {
+                                                             CreditTerms terms, LocalDate paymentDate) {
         boolean paid = installments.stream()
                 .anyMatch(row -> Objects.equals(row.getPeriod(), 1) && InstallmentPayment.PAID.equalsIgnoreCase(row.getState()));
-        var dueDate = CreditCycle.graceEndDate(purchase.getPurchaseDate(), cutoffDay, paymentDay);
+        var dueDate = terms.firstPaymentDate(purchase.getPurchaseDate());
         if (paid || dueDate.isAfter(paymentDate)) {
             return Optional.empty();
         }
         int days = (int) ChronoUnit.DAYS.between(purchase.getPurchaseDate(), dueDate);
         var principal = InterestCalculator.scaleMoney(purchase.getAmount());
-        var interest = InterestCalculator.compensatoryInterest(purchase.getAmount(), compensatoryRate, days);
+        var interest = InterestCalculator.compensatoryInterest(purchase.getAmount(), terms.compensatoryRate(), days);
         return Optional.of(new CreditStatement.Line(
                 purchase.getPurchaseId(), purchase.getDescription(), purchase.getPurchaseDate(),
                 1, 1, dueDate, interest, principal, principal.add(interest)));
