@@ -41,7 +41,8 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
                 CurrentUserRole.clientRole(),
                 OPEN_ACCOUNT_ACTION,
                 "Credit account %d opened for customer %s with limit %s".formatted(
-                        saved.getId(), saved.getCustomerId(), saved.getCreditLimit())));
+                        saved.getId(), saved.getCustomerId(), saved.getCreditLimit()),
+                saved.getStoreId()));
         return Result.success(saved);
     }
 

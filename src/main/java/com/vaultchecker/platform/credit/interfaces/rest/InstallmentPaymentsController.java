@@ -7,6 +7,7 @@ import com.vaultchecker.platform.credit.interfaces.rest.resources.InstallmentPay
 import com.vaultchecker.platform.credit.interfaces.rest.resources.RegisterInstallmentPaymentResource;
 import com.vaultchecker.platform.credit.interfaces.rest.transform.InstallmentPaymentResourceFromEntityAssembler;
 import com.vaultchecker.platform.credit.interfaces.rest.transform.RegisterInstallmentPaymentCommandFromResourceAssembler;
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserScope;
 import com.vaultchecker.platform.shared.interfaces.rest.transform.ResponseEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -15,12 +16,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping(value = "/api/v1/installment-payments", produces = MediaType.APPLICATION_JSON_VALUE)
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'STORE_ADMIN')")
 @Tag(name = "Installment Payments", description = "Installment payment endpoints")
 public class InstallmentPaymentsController {
     private final InstallmentPaymentCommandService commandService;
@@ -38,7 +41,7 @@ public class InstallmentPaymentsController {
     public ResponseEntity<List<InstallmentPaymentResource>> getAll(@RequestParam(required = false) String storeId,
                                                                    @RequestParam(required = false) String customerId,
                                                                    @RequestParam(required = false) String purchaseId) {
-        var payments = queryService.handle(new GetAllInstallmentPaymentsQuery(storeId, customerId, purchaseId));
+        var payments = queryService.handle(new GetAllInstallmentPaymentsQuery(CurrentUserScope.restrictStore(storeId), customerId, purchaseId));
         return ResponseEntity.ok(payments.stream()
                 .map(InstallmentPaymentResourceFromEntityAssembler::toResourceFromEntity).toList());
     }

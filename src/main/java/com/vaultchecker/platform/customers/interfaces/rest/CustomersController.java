@@ -11,6 +11,7 @@ import com.vaultchecker.platform.customers.interfaces.rest.resources.UpdateCusto
 import com.vaultchecker.platform.customers.interfaces.rest.transform.CreateCustomerCommandFromResourceAssembler;
 import com.vaultchecker.platform.customers.interfaces.rest.transform.CustomerResourceFromEntityAssembler;
 import com.vaultchecker.platform.customers.interfaces.rest.transform.UpdateCustomerCommandFromResourceAssembler;
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserScope;
 import com.vaultchecker.platform.shared.interfaces.rest.transform.ResponseEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -19,12 +20,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping(value = "/api/v1/customers", produces = MediaType.APPLICATION_JSON_VALUE)
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'STORE_ADMIN')")
 @Tag(name = "Customers", description = "Store customer management endpoints")
 public class CustomersController {
     private final CustomerCommandService customerCommandService;
@@ -38,7 +41,7 @@ public class CustomersController {
     @GetMapping
     @Operation(summary = "Get all customers (optionally filtered by storeId)", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<List<CustomerResource>> getAllCustomers(@RequestParam(required = false) String storeId) {
-        var customers = customerQueryService.handle(new GetAllCustomersQuery(storeId));
+        var customers = customerQueryService.handle(new GetAllCustomersQuery(CurrentUserScope.restrictStore(storeId)));
         return ResponseEntity.ok(customers.stream().map(CustomerResourceFromEntityAssembler::toResourceFromEntity).toList());
     }
 
@@ -46,6 +49,7 @@ public class CustomersController {
     @Operation(summary = "Get customer by ID", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<CustomerResource> getCustomerById(@PathVariable Long id) {
         return customerQueryService.handle(new GetCustomerByIdQuery(id))
+                .filter(customer -> CurrentUserScope.canAccessStore(customer.getStoreId()))
                 .map(customer -> ResponseEntity.ok(CustomerResourceFromEntityAssembler.toResourceFromEntity(customer)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -53,6 +57,7 @@ public class CustomersController {
     @PostMapping
     @Operation(summary = "Register a new customer", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> createCustomer(@Valid @RequestBody CreateCustomerResource resource) {
+        CurrentUserScope.requireStore(resource.storeId());
         var command = CreateCustomerCommandFromResourceAssembler.toCommandFromResource(resource);
         var result = customerCommandService.handle(command);
         return ResponseEntityAssembler.toResponseEntityFromResult(
@@ -62,6 +67,7 @@ public class CustomersController {
     @PutMapping("/{id}")
     @Operation(summary = "Update a customer", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> updateCustomer(@PathVariable Long id, @Valid @RequestBody UpdateCustomerResource resource) {
+        customerQueryService.handle(new GetCustomerByIdQuery(id)).ifPresent(customer -> CurrentUserScope.requireStore(customer.getStoreId()));
         var command = UpdateCustomerCommandFromResourceAssembler.toCommandFromResource(id, resource);
         var result = customerCommandService.handle(command);
         return ResponseEntityAssembler.toResponseEntityFromResult(
@@ -71,6 +77,7 @@ public class CustomersController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a customer", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<?> deleteCustomer(@PathVariable Long id) {
+        customerQueryService.handle(new GetCustomerByIdQuery(id)).ifPresent(customer -> CurrentUserScope.requireStore(customer.getStoreId()));
         var result = customerCommandService.handle(new DeleteCustomerCommand(id));
         return ResponseEntityAssembler.toResponseEntityFromResult(
                 result, deleted -> null, HttpStatus.NO_CONTENT);

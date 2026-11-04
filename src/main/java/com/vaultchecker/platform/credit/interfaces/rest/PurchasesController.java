@@ -7,6 +7,7 @@ import com.vaultchecker.platform.credit.interfaces.rest.resources.PurchaseResour
 import com.vaultchecker.platform.credit.interfaces.rest.resources.RegisterPurchaseResource;
 import com.vaultchecker.platform.credit.interfaces.rest.transform.PurchaseResourceFromEntityAssembler;
 import com.vaultchecker.platform.credit.interfaces.rest.transform.RegisterPurchaseCommandFromResourceAssembler;
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserScope;
 import com.vaultchecker.platform.shared.interfaces.rest.transform.ResponseEntityAssembler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -15,12 +16,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping(value = "/api/v1/purchases", produces = MediaType.APPLICATION_JSON_VALUE)
+@PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'STORE_ADMIN')")
 @Tag(name = "Purchases", description = "Credit purchase endpoints")
 public class PurchasesController {
     private final PurchaseCommandService commandService;
@@ -36,7 +39,7 @@ public class PurchasesController {
             security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<List<PurchaseResource>> getAll(@RequestParam(required = false) String storeId,
                                                          @RequestParam(required = false) String customerId) {
-        var purchases = queryService.handle(new GetAllPurchasesQuery(storeId, customerId));
+        var purchases = queryService.handle(new GetAllPurchasesQuery(CurrentUserScope.restrictStore(storeId), customerId));
         return ResponseEntity.ok(purchases.stream()
                 .map(PurchaseResourceFromEntityAssembler::toResourceFromEntity).toList());
     }

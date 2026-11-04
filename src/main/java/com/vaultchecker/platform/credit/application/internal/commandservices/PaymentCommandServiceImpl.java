@@ -14,6 +14,7 @@ import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 import com.vaultchecker.platform.shared.domain.model.events.AuditableActionRegisteredEvent;
 import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserRole;
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserScope;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -52,6 +53,7 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
             return Result.failure(ApplicationError.notFound("CreditAccount", String.valueOf(command.creditAccountId())));
         }
         var account = accountOpt.get();
+        CurrentUserScope.requireStore(account.getStoreId());
         if (!pendingDebtService.pendingDueDates(account.getCustomerId()).isEmpty()) {
             return Result.failure(ApplicationError.conflict(
                     "PendingPurchases", "Pending purchases are paid one by one from the payment plan"));
@@ -87,7 +89,8 @@ public class PaymentCommandServiceImpl implements PaymentCommandService {
                 CurrentUserRole.clientRole(),
                 REGISTER_PAYMENT_ACTION,
                 "Payment of %s on credit account %d (late interest %s for %d days)".formatted(
-                        command.amount(), command.creditAccountId(), allocation.toLateInterest(), daysLate)));
+                        command.amount(), command.creditAccountId(), allocation.toLateInterest(), daysLate),
+                account.getStoreId()));
         return Result.success(saved);
     }
 

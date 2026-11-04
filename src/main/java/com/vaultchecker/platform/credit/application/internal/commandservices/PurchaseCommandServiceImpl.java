@@ -17,6 +17,7 @@ import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserScope;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -56,6 +57,7 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         if (customer == null) {
             return Result.failure(ApplicationError.notFound("Customer", String.valueOf(command.customerId())));
         }
+        CurrentUserScope.requireStore(customer.getStoreId());
         int months = command.months() == null ? 1 : command.months();
         if (customer.getMaxMonths() != null && months > customer.getMaxMonths()) {
             return Result.failure(ApplicationError.validationError(

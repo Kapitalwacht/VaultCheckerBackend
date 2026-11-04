@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.subscriptions.interfaces.rest;
 
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserScope;
 import com.vaultchecker.platform.subscriptions.application.commandservices.BillingCommandService;
 import com.vaultchecker.platform.subscriptions.application.queryservices.BillingQueryService;
 import com.vaultchecker.platform.subscriptions.domain.model.commands.ChangePlanCommand;
@@ -47,6 +48,7 @@ public class BillingController {
         if (storeId == null || storeId.isBlank()) {
             return ResponseEntity.ok(List.of());
         }
+        CurrentUserScope.requireStore(storeId);
         var resources = billingQueryService.getSubscriptionByStore(storeId)
                 .map(SubscriptionResourceFromEntityAssembler::toResourceFromEntity)
                 .map(List::of)
@@ -60,6 +62,7 @@ public class BillingController {
         if (storeId == null || storeId.isBlank()) {
             return ResponseEntity.ok(List.of());
         }
+        CurrentUserScope.requireStore(storeId);
         var resources = billingQueryService.getInvoicesByStore(storeId).stream()
                 .map(InvoiceResourceFromEntityAssembler::toResourceFromEntity).toList();
         return ResponseEntity.ok(resources);
@@ -68,6 +71,7 @@ public class BillingController {
     @PostMapping("/subscriptions")
     @Operation(summary = "Change the plan of a store", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<SubscriptionResource> changePlan(@Valid @RequestBody ChangePlanResource resource) {
+        CurrentUserScope.requireStore(resource.storeId());
         var command = new ChangePlanCommand(resource.storeId(), resource.planId());
         return billingCommandService.handle(command)
                 .map(subscription -> ResponseEntity.ok(SubscriptionResourceFromEntityAssembler.toResourceFromEntity(subscription)))

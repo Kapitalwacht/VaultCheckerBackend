@@ -13,6 +13,7 @@ import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
 import com.vaultchecker.platform.customers.domain.repositories.CustomerRepository;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
+import com.vaultchecker.platform.shared.infrastructure.security.CurrentUserScope;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -60,6 +61,7 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
         }
 
         var customer = customerRepository.findByReference(command.customerId()).orElse(null);
+        CurrentUserScope.requireStore(customer != null ? customer.getStoreId() : command.storeId());
         var payment = scheduled.orElseGet(() -> singlePaymentRow(command, customer));
         var paidDate = command.paidDate() != null ? command.paidDate() : LocalDate.now();
         var lateFee = lateFee(payment, customer, paidDate);
