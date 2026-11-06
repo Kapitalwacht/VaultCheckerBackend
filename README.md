@@ -17,8 +17,10 @@ with a **hexagonal / ports-and-adapters** layout and a lightweight **CQRS** styl
 |------------------|--------------------------------------------------------------|
 | Language / runtime | Java 26                                                    |
 | Framework        | Spring Boot 4 (Web MVC, Data JPA, Security, Validation)       |
-| Database         | PostgreSQL (H2 in tests)                                      |
-| Auth             | JWT bearer tokens (JJWT) + BCrypt password hashing           |
+| Database         | PostgreSQL (in-memory H2 through the `h2` profile)            |
+| Auth             | JWT access tokens (JJWT), rotating refresh tokens, BCrypt, Google sign-in |
+| Email            | EmailJS REST API (verification link, password recovery code)  |
+| Payments         | Stripe test-mode Payment Links                                |
 | Docs             | SpringDoc OpenAPI / Swagger UI                                |
 | Build            | Maven (wrapper included) — `./mvnw`                          |
 
@@ -78,18 +80,19 @@ POST /api/v1/stores
 
 Every use case returns a **`Result<T, ApplicationError>`** (a sealed type in `shared`) instead of
 throwing for expected failures. `ResponseEntityAssembler` maps success to the given HTTP status and
-`ApplicationError` to the correct code (`VALIDATION_ERROR` → 400, `*_NOT_FOUND` → 404,
-`BUSINESS_RULE_VIOLATION` → 422, `*_CONFLICT` → 409). Messages are localised (en/es) via i18n bundles.
+`ApplicationError` to the correct code (`VALIDATION_ERROR` → 400, `FORBIDDEN` → 403, `*_NOT_FOUND` → 404,
+`*_CONFLICT` → 409, `BUSINESS_RULE_VIOLATION` → 422, `SERVICE_UNAVAILABLE` → 503). Messages and error
+details are localised (en/es) from the request's `Accept-Language` header.
 
 ### Bounded contexts
 
 | Context         | Responsibility                                                     | Base path(s) |
 |-----------------|-------------------------------------------------------------------|--------------|
-| `iam`           | Authentication, users, roles, JWT/BCrypt security                 | `/authentication`, `/users`, `/roles` |
+| `iam`           | Sign-up/sign-in, sessions, email verification, password recovery, users and roles | `/authentication`, `/users`, `/roles` |
 | `stores`        | Store registration / logical deactivation, tenant isolation       | `/stores` |
 | `catalog`       | Products & services (cash/list price, payment mode, brand, image) | `/products` |
 | `customers`     | Customers and their pactada credit terms (rate, currency, dates)  | `/customers` |
-| `credit`        | Credit accounts, purchases, payments + the **financial engine**   | `/credit-accounts`, `/purchases`, `/payments` |
+| `credit`        | Credit accounts, statements, purchases, payments + the **financial engine** | `/credit-accounts`, `/purchases`, `/payments`, `/installment-payments` |
 | `subscriptions` | Store plans, subscriptions and invoices                           | `/plans`, `/subscriptions`, `/invoices` |
 | `audit`         | Operation traceability, event-driven                              | `/audit-logs` |
 | `shared`        | Base aggregate, `Result`/`ApplicationError`, global error handling, JPA/OpenAPI/i18n config | — |
@@ -100,12 +103,22 @@ All paths are under `/api/v1`. Interactive docs: **`/swagger-ui.html`**.
 
 Three roles model the three personas in the brief:
 
-- `ROLE_SYSTEM_ADMIN` — platform admin; registers and deactivates stores.
-- `ROLE_STORE_ADMIN` — business owner; manages products, customers and credit.
+- `ROLE_SYSTEM_ADMIN` — platform admin; registers and deactivates stores. Only one can exist.
+- `ROLE_STORE_ADMIN` — business owner; manages products, customers, credit and the store's plan.
 - `ROLE_CUSTOMER` — neighbour; consults their own debt and payment plan.
 
-Roles are created on demand the first time they are assigned (no startup seeding). Every product,
-customer and credit account carries a `storeId`, keeping each store's data isolated.
+The API accepts and returns the short names `system-admin`, `store-admin` and `customer`. Roles are
+created on demand the first time they are assigned (no startup seeding).
+
+Every product, customer and credit account carries a `storeId`. `CurrentUserScope` reads the store from
+the token, so lists only return the caller's data and another store's records answer `403` or `404`.
+A customer signs up with the **DNI** registered by the store, which links the user to their debts.
+
+### Sessions
+
+`sign-in` returns a **15-minute access token** and a **7-day refresh token**. The refresh token is
+stored as a SHA-256 hash and rotates on every `/authentication/refresh`; `/authentication/sign-out`
+revokes it. Sign-in requires a verified email unless `EMAIL_VERIFICATION_REQUIRED=false`.
 
 ---
 
@@ -122,6 +135,11 @@ rounded to 2 decimals, rates carried to ≥7 decimals**:
   `A = P · r / (1 − (1 + r)⁻ⁿ)`, using the effective monthly rate and capitalising grace days first.
 - **`PaymentAllocationCalculator`** — applies the payment **prelación**: a payment is imputed to
   moratory interest first, then compensatory interest, then principal.
+- **`CreditCycle`** — derives the cutoff, grace end and payment dates of each billing cycle.
+
+Each purchase freezes the terms agreed when it was made (`CreditTerms`), so later changes to the
+customer's rate do not alter existing credits. Each credit keeps the customer's currency (PEN or USD).
+Amounts owed are always computed on the server.
 
 Being framework-free, each calculator can be unit-tested directly against the assignment's test cases.
 
@@ -145,9 +163,10 @@ DATABASE_URL=jdbc:postgresql://localhost:5432/vaultchecker?user=postgres&passwor
 JWT_SECRET=your-strong-random-secret
 ```
 
-Optional variables for account emails (verification link and password recovery code), sent through
-the EmailJS REST API. While they are empty, sign-up still works but no email is sent, and password
-recovery and email changes answer `503 SERVICE_UNAVAILABLE`:
+Variables for account emails (verification link and password recovery code), sent through the
+EmailJS REST API. While they are empty, sign-up still works but no email is sent, and password recovery
+and email changes answer `503 SERVICE_UNAVAILABLE`. Set `FRONTEND_BASE_URL` in production; without it,
+verification links point to `http://localhost:5173`:
 
 ```properties
 FRONTEND_BASE_URL=https://vaultchecker-frontend.web.app
@@ -161,16 +180,39 @@ EMAILJS_RECOVERY_TEMPLATE_ID=
 EmailJS only accepts server-side calls when **Account → Security → "Allow EmailJS API for
 non-browser applications"** is enabled. The verification template receives `{{to_email}}`,
 `{{name}}` and `{{link}}`; the recovery template receives `{{to_email}}`, `{{name}}` and `{{code}}`.
+Both templates must use `{{to_email}}` in their **To Email** field.
+
+Other optional variables (the defaults are in `application.properties`):
+
+| Variable                      | Default          | Purpose                                 |
+|-------------------------------|------------------|-----------------------------------------|
+| `PORT`                        | `8092`           | Port the API listens on                 |
+| `JWT_EXPIRATION_MINUTES`      | `15`             | Access token lifetime                   |
+| `REFRESH_EXPIRATION_DAYS`     | `7`              | Refresh token lifetime                  |
+| `EMAIL_VERIFICATION_REQUIRED` | `true`           | Whether sign-in needs a verified email  |
+| `APP_TIME_ZONE`               | `America/Lima`   | Business day for due and overdue dates  |
+| `GOOGLE_CLIENT_ID`            | Project client   | Audience accepted for Google sign-in    |
+| `STRIPE_PAYMENT_LINK_NEGOCIO` | Test link        | Payment Link of the Negocio plan        |
+| `STRIPE_PAYMENT_LINK_CADENA`  | Test link        | Payment Link of the Cadena plan         |
+
+Each Stripe Payment Link must redirect to `<frontend>/billing?checkout=success` after payment. That
+redirect is what activates the plan.
 
 ---
 
 ## Running locally
 
-Prerequisites: **JDK 26** and a running **PostgreSQL** with a `vaultchecker` database. Set your values
-in `.env.development`, then:
+Prerequisites: **JDK 26** and a running **PostgreSQL** with a `vaultchecker` database
+(`docker compose up -d` starts one). Set your values in `.env.development`, then:
 
 ```bash
 ./mvnw spring-boot:run
+```
+
+To run without PostgreSQL, use the in-memory database. Its data is lost on restart:
+
+```bash
+SPRING_PROFILES_ACTIVE=h2 EMAIL_VERIFICATION_REQUIRED=false ./mvnw spring-boot:run
 ```
 
 - API: `http://localhost:8092`
@@ -180,16 +222,18 @@ On first start Hibernate creates the tables (`spring.jpa.hibernate.ddl-auto=upda
 
 ### Quick smoke test
 
+With `EMAIL_VERIFICATION_REQUIRED=false`, as in the `h2` command above:
+
 ```bash
-# Register a store admin, then sign in to get a JWT
+# Register a store admin with their store, then sign in to get a JWT
 curl -X POST http://localhost:8092/api/v1/authentication/sign-up \
   -H "Content-Type: application/json" \
-  -d '{"email":"owner@bodega.pe","password":"12345678","role":"ROLE_STORE_ADMIN"}'
+  -d '{"email":"owner@bodega.pe","password":"12345678","name":"Owner","role":"store-admin","storeId":"ST-001","businessName":"Bodega Don Pepe"}'
 
 curl -X POST http://localhost:8092/api/v1/authentication/sign-in \
   -H "Content-Type: application/json" \
   -d '{"email":"owner@bodega.pe","password":"12345678"}'
-# → { "id":1, "email":"...", "role":"ROLE_STORE_ADMIN", "token":"eyJ..." }
+# → { "id":1, "email":"...", "role":"store-admin", "storeId":"ST-001", "token":"eyJ...", "refreshToken":"..." }
 ```
 
 Use the returned `token` as `Authorization: Bearer <token>` for the protected endpoints.
@@ -200,3 +244,9 @@ Use the returned `token` as `Authorization: Bearer <token>` for the protected en
 docker build -t vaultchecker-backend .
 docker run -p 8092:8092 --env-file .env.production vaultchecker-backend
 ```
+
+## Deployment
+
+Production runs on **Render** from this `Dockerfile` with the `prod` profile. Every push to `main`
+deploys automatically. Set `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_BASE_URL` and the `EMAILJS_*`
+variables in the service's **Environment** tab.
