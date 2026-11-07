@@ -35,4 +35,8 @@ public class Subscription extends AbstractDomainAggregateRoot<Subscription> {
         this.currentPeriodEnd = currentPeriodEnd;
         this.status = ACTIVE;
     }
+
+    public static Subscription onDefaultPlan(String storeId) {
+        return new Subscription(null, storeId, Plan.DEFAULT_PLAN_ID, null);
+    }
 }

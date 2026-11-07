@@ -37,7 +37,7 @@ public class PlanCatalogSeeder {
 
     private List<Plan> defaultPlans() {
         return List.of(
-                plan("barrio", "Barrio", 0, false, "", List.of(
+                plan(Plan.DEFAULT_PLAN_ID, "Barrio", 0, false, "", List.of(
                         "billing.features.store1",
                         "billing.features.customers50",
                         "billing.features.installments")),

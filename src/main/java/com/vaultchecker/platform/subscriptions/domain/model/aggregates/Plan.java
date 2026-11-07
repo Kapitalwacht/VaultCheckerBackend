@@ -10,6 +10,8 @@ import java.util.List;
 @Getter
 public class Plan extends AbstractDomainAggregateRoot<Plan> {
 
+    public static final String DEFAULT_PLAN_ID = "barrio";
+
     @Setter
     private Long id;
     @Setter

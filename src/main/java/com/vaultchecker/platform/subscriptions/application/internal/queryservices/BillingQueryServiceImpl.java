@@ -40,7 +40,8 @@ public class BillingQueryServiceImpl implements BillingQueryService {
     @Override
     public Optional<Subscription> getSubscriptionByStore(String storeId) {
         return subscriptionPersistenceRepository.findByStoreId(storeId)
-                .map(SubscriptionPersistenceAssembler::toDomainFromPersistence);
+                .map(SubscriptionPersistenceAssembler::toDomainFromPersistence)
+                .or(() -> Optional.of(Subscription.onDefaultPlan(storeId)));
     }
 
     @Override
