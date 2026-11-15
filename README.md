@@ -192,8 +192,8 @@ Other optional variables (the defaults are in `application.properties`):
 | `EMAIL_VERIFICATION_REQUIRED` | `true`           | Whether sign-in needs a verified email  |
 | `APP_TIME_ZONE`               | `America/Lima`   | Business day for due and overdue dates  |
 | `GOOGLE_CLIENT_ID`            | Project client   | Audience accepted for Google sign-in    |
-| `STRIPE_PAYMENT_LINK_NEGOCIO` | Test link        | Payment Link of the Negocio plan        |
-| `STRIPE_PAYMENT_LINK_CADENA`  | Test link        | Payment Link of the Cadena plan         |
+| `STRIPE_PAYMENT_LINK_BUSINESS` | Test link       | Payment Link of the Business plan       |
+| `STRIPE_PAYMENT_LINK_CHAIN`   | Test link        | Payment Link of the Chain plan          |
 
 Each Stripe Payment Link must redirect to `<frontend>/billing?checkout=success` after payment. That
 redirect is what activates the plan.
