@@ -70,6 +70,14 @@ public class User extends AbstractDomainAggregateRoot<User> {
         return this;
     }
 
+    /**
+     * Makes this user the system administrator. The role replaces any previous one because
+     * clients read a single role per user.
+     */
+    public void promoteToSystemAdmin(Role systemAdminRole) {
+        this.roles = new HashSet<>(Set.of(systemAdminRole));
+    }
+
     public void issueVerificationToken(String token) {
         this.emailVerified = false;
         this.verificationToken = token;
