@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.customers.application.internal.commandservices;
 
+import com.vaultchecker.platform.shared.application.audit.AuditTrail;
 import com.vaultchecker.platform.customers.application.commandservices.CustomerCommandService;
 import com.vaultchecker.platform.customers.application.internal.outboundservices.credit.CreditAccountDirectoryService;
 import com.vaultchecker.platform.customers.domain.model.aggregates.Customer;
@@ -16,11 +17,14 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
 
     private final CustomerRepository customerRepository;
     private final CreditAccountDirectoryService creditAccountDirectoryService;
+    private final AuditTrail auditTrail;
 
     public CustomerCommandServiceImpl(CustomerRepository customerRepository,
-                                      CreditAccountDirectoryService creditAccountDirectoryService) {
+                                      CreditAccountDirectoryService creditAccountDirectoryService,
+                                      AuditTrail auditTrail) {
         this.customerRepository = customerRepository;
         this.creditAccountDirectoryService = creditAccountDirectoryService;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -33,7 +37,9 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
         applyTerms(customer, command.currency(), command.rateType(), command.rateValue(),
                 command.rateCapitalizationDays(), command.ratePeriodDays(), command.moratoriumRateType(),
                 command.moratoriumRateValue(), command.maxMonths(), command.cutoffDay(), command.paymentDay());
-        return Result.success(customerRepository.save(customer));
+        var saved = customerRepository.save(customer);
+        auditTrail.record("CREATE_CUSTOMER", "Customer %s created".formatted(fullName(saved)), saved.getStoreId());
+        return Result.success(saved);
     }
 
     @Override
@@ -63,19 +69,27 @@ public class CustomerCommandServiceImpl implements CustomerCommandService {
         }
         var saved = customerRepository.save(customer);
         creditAccountDirectoryService.updateCreditLimit(saved.getId(), saved.getCreditLimit());
+        auditTrail.record("UPDATE_CUSTOMER", "Customer %s updated".formatted(fullName(saved)), saved.getStoreId());
         return Result.success(saved);
     }
 
     @Override
     public Result<Boolean, ApplicationError> handle(DeleteCustomerCommand command) {
-        if (!customerRepository.existsById(command.id())) {
+        var existing = customerRepository.findById(command.id());
+        if (existing.isEmpty()) {
             return Result.failure(ApplicationError.notFound("Customer", String.valueOf(command.id())));
         }
         if (creditAccountDirectoryService.hasDebt(command.id())) {
             return Result.failure(ApplicationError.conflict("CustomerDebt", "error.detail.customer-has-debt"));
         }
         customerRepository.deleteById(command.id());
+        auditTrail.record("DELETE_CUSTOMER", "Customer %s deleted".formatted(fullName(existing.get())), existing.get().getStoreId());
         return Result.success(true);
+    }
+
+    private static String fullName(Customer customer) {
+        var last = customer.getLastName();
+        return last == null || last.isBlank() ? customer.getFirstName() : customer.getFirstName() + " " + last;
     }
 
     private void applyTerms(Customer customer, String currency, String rateType, java.math.BigDecimal rateValue,

@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.catalog.application.internal.commandservices;
 
+import com.vaultchecker.platform.shared.application.audit.AuditTrail;
 import com.vaultchecker.platform.catalog.application.commandservices.ProductCommandService;
 import com.vaultchecker.platform.catalog.domain.model.aggregates.Product;
 import com.vaultchecker.platform.catalog.domain.model.commands.CreateProductCommand;
@@ -14,9 +15,11 @@ import org.springframework.stereotype.Service;
 public class ProductCommandServiceImpl implements ProductCommandService {
 
     private final ProductRepository productRepository;
+    private final AuditTrail auditTrail;
 
-    public ProductCommandServiceImpl(ProductRepository productRepository) {
+    public ProductCommandServiceImpl(ProductRepository productRepository, AuditTrail auditTrail) {
         this.productRepository = productRepository;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -27,7 +30,9 @@ public class ProductCommandServiceImpl implements ProductCommandService {
         var product = new Product(command.productId(), command.storeId(), command.name(), command.category(),
                 command.brand(), command.supplier(), command.unit(), command.cashPrice(), command.listPrice(), command.paymentMode(),
                 command.imageUrl());
-        return Result.success(productRepository.save(product));
+        var saved = productRepository.save(product);
+        auditTrail.record("CREATE_PRODUCT", "Product %s created".formatted(saved.getName()), saved.getStoreId());
+        return Result.success(saved);
     }
 
     @Override
@@ -51,15 +56,19 @@ public class ProductCommandServiceImpl implements ProductCommandService {
         if (command.state() != null && !command.state().isBlank()) {
             product.setState(command.state());
         }
-        return Result.success(productRepository.save(product));
+        var saved = productRepository.save(product);
+        auditTrail.record("UPDATE_PRODUCT", "Product %s updated".formatted(saved.getName()), saved.getStoreId());
+        return Result.success(saved);
     }
 
     @Override
     public Result<Boolean, ApplicationError> handle(DeleteProductCommand command) {
-        if (!productRepository.existsById(command.id())) {
+        var existing = productRepository.findById(command.id());
+        if (existing.isEmpty()) {
             return Result.failure(ApplicationError.notFound("Product", String.valueOf(command.id())));
         }
         productRepository.deleteById(command.id());
+        auditTrail.record("DELETE_PRODUCT", "Product %s deleted".formatted(existing.get().getName()), existing.get().getStoreId());
         return Result.success(true);
     }
 }

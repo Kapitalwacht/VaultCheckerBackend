@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.credit.application.internal.commandservices;
 
+import com.vaultchecker.platform.shared.application.audit.AuditTrail;
 import com.vaultchecker.platform.credit.application.commandservices.PurchaseCommandService;
 import com.vaultchecker.platform.credit.domain.model.aggregates.CreditAccount;
 import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayment;
@@ -34,19 +35,22 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
     private final PendingDebtService pendingDebtService;
+    private final AuditTrail auditTrail;
 
     public PurchaseCommandServiceImpl(PurchaseRepository purchaseRepository,
                                       CreditAccountRepository creditAccountRepository,
                                       InstallmentPaymentRepository installmentPaymentRepository,
                                       CustomerRepository customerRepository,
                                       ProductRepository productRepository,
-                                      PendingDebtService pendingDebtService) {
+                                      PendingDebtService pendingDebtService,
+                                      AuditTrail auditTrail) {
         this.purchaseRepository = purchaseRepository;
         this.creditAccountRepository = creditAccountRepository;
         this.installmentPaymentRepository = installmentPaymentRepository;
         this.customerRepository = customerRepository;
         this.productRepository = productRepository;
         this.pendingDebtService = pendingDebtService;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -95,6 +99,9 @@ public class PurchaseCommandServiceImpl implements PurchaseCommandService {
         }
         pendingDebtService.refreshDueDate(account);
         creditAccountRepository.save(account);
+        auditTrail.record("REGISTER_PURCHASE", "Purchase of %s for %s (%d months)".formatted(
+                savedPurchase.getDescription() == null || savedPurchase.getDescription().isBlank() ? "item" : savedPurchase.getDescription(),
+                savedPurchase.getAmount(), months), savedPurchase.getStoreId());
 
         return Result.success(savedPurchase);
     }

@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.credit.application.internal.commandservices;
 
+import com.vaultchecker.platform.shared.application.audit.AuditTrail;
 import com.vaultchecker.platform.credit.application.commandservices.CreditAccountCommandService;
 import com.vaultchecker.platform.credit.domain.model.aggregates.CreditAccount;
 import com.vaultchecker.platform.credit.domain.model.commands.CreateCreditAccountCommand;
@@ -19,11 +20,14 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
 
     private final CreditAccountRepository creditAccountRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuditTrail auditTrail;
 
     public CreditAccountCommandServiceImpl(CreditAccountRepository creditAccountRepository,
-                                           ApplicationEventPublisher eventPublisher) {
+                                           ApplicationEventPublisher eventPublisher,
+                                           AuditTrail auditTrail) {
         this.creditAccountRepository = creditAccountRepository;
         this.eventPublisher = eventPublisher;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -66,15 +70,21 @@ public class CreditAccountCommandServiceImpl implements CreditAccountCommandServ
         if (account.exceedsLimit()) {
             return Result.failure(ApplicationError.validationError("balance", "error.detail.balance-over-limit"));
         }
-        return Result.success(creditAccountRepository.save(account));
+        var saved = creditAccountRepository.save(account);
+        auditTrail.record("UPDATE_CREDIT_ACCOUNT", "Credit account %d updated for customer %s".formatted(
+                saved.getId(), saved.getCustomerId()), saved.getStoreId());
+        return Result.success(saved);
     }
 
     @Override
     public Result<Boolean, ApplicationError> handleDelete(Long id) {
-        if (!creditAccountRepository.existsById(id)) {
+        var existing = creditAccountRepository.findById(id);
+        if (existing.isEmpty()) {
             return Result.failure(ApplicationError.notFound("CreditAccount", String.valueOf(id)));
         }
         creditAccountRepository.deleteById(id);
+        auditTrail.record("DELETE_CREDIT_ACCOUNT", "Credit account %d deleted for customer %s".formatted(
+                id, existing.get().getCustomerId()), existing.get().getStoreId());
         return Result.success(true);
     }
 }

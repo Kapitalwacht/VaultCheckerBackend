@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.stores.application.internal.commandservices;
 
+import com.vaultchecker.platform.shared.application.audit.AuditTrail;
 import com.vaultchecker.platform.shared.application.result.ApplicationError;
 import com.vaultchecker.platform.shared.application.result.Result;
 import com.vaultchecker.platform.stores.application.commandservices.StoreCommandService;
@@ -14,9 +15,11 @@ import org.springframework.stereotype.Service;
 public class StoreCommandServiceImpl implements StoreCommandService {
 
     private final StoreRepository storeRepository;
+    private final AuditTrail auditTrail;
 
-    public StoreCommandServiceImpl(StoreRepository storeRepository) {
+    public StoreCommandServiceImpl(StoreRepository storeRepository, AuditTrail auditTrail) {
         this.storeRepository = storeRepository;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -29,7 +32,9 @@ public class StoreCommandServiceImpl implements StoreCommandService {
         }
         var store = new Store(command.storeId(), command.ruc(), command.businessName(), command.category(),
                 command.address(), command.phone(), command.email(), command.description());
-        return Result.success(storeRepository.save(store));
+        var saved = storeRepository.save(store);
+        auditTrail.record("CREATE_STORE", "Store %s created".formatted(saved.getBusinessName()), saved.getStoreId());
+        return Result.success(saved);
     }
 
     @Override
@@ -50,7 +55,9 @@ public class StoreCommandServiceImpl implements StoreCommandService {
         if (command.state() != null && !command.state().isBlank()) {
             store.setState(command.state());
         }
-        return Result.success(storeRepository.save(store));
+        var saved = storeRepository.save(store);
+        auditTrail.record("UPDATE_STORE", "Store %s updated".formatted(saved.getBusinessName()), saved.getStoreId());
+        return Result.success(saved);
     }
 
     @Override
@@ -61,6 +68,8 @@ public class StoreCommandServiceImpl implements StoreCommandService {
         }
         var store = existing.get();
         store.deactivate();
-        return Result.success(storeRepository.save(store));
+        var saved = storeRepository.save(store);
+        auditTrail.record("DEACTIVATE_STORE", "Store %s deactivated".formatted(saved.getBusinessName()), saved.getStoreId());
+        return Result.success(saved);
     }
 }

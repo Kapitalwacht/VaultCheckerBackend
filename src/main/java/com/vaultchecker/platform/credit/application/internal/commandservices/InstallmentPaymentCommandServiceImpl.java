@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.credit.application.internal.commandservices;
 
+import com.vaultchecker.platform.shared.application.audit.AuditTrail;
 import com.vaultchecker.platform.credit.application.commandservices.InstallmentPaymentCommandService;
 import com.vaultchecker.platform.credit.domain.model.aggregates.InstallmentPayment;
 import com.vaultchecker.platform.credit.domain.model.aggregates.Purchase;
@@ -29,17 +30,20 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
     private final PurchaseRepository purchaseRepository;
     private final CustomerRepository customerRepository;
     private final PendingDebtService pendingDebtService;
+    private final AuditTrail auditTrail;
 
     public InstallmentPaymentCommandServiceImpl(InstallmentPaymentRepository repository,
                                                 CreditAccountRepository creditAccountRepository,
                                                 PurchaseRepository purchaseRepository,
                                                 CustomerRepository customerRepository,
-                                                PendingDebtService pendingDebtService) {
+                                                PendingDebtService pendingDebtService,
+                                                AuditTrail auditTrail) {
         this.repository = repository;
         this.creditAccountRepository = creditAccountRepository;
         this.purchaseRepository = purchaseRepository;
         this.customerRepository = customerRepository;
         this.pendingDebtService = pendingDebtService;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -78,6 +82,8 @@ public class InstallmentPaymentCommandServiceImpl implements InstallmentPaymentC
         if (InstallmentPayment.PAID.equalsIgnoreCase(saved.getState())) {
             reduceCustomerBalance(saved.getCustomerId(), saved.getPrincipal());
         }
+        auditTrail.record("REGISTER_INSTALLMENT_PAYMENT", "Installment #%d paid %s (late fee %s)".formatted(
+                saved.getPeriod(), saved.getTotal(), saved.getLateFee()), saved.getStoreId());
         return Result.success(saved);
     }
 

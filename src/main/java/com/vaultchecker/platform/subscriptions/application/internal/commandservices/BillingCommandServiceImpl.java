@@ -1,5 +1,6 @@
 package com.vaultchecker.platform.subscriptions.application.internal.commandservices;
 
+import com.vaultchecker.platform.shared.application.audit.AuditTrail;
 import com.vaultchecker.platform.subscriptions.application.commandservices.BillingCommandService;
 import com.vaultchecker.platform.subscriptions.domain.model.aggregates.Subscription;
 import com.vaultchecker.platform.subscriptions.domain.model.commands.ChangePlanCommand;
@@ -23,13 +24,16 @@ public class BillingCommandServiceImpl implements BillingCommandService {
     private final PlanPersistenceRepository planPersistenceRepository;
     private final SubscriptionPersistenceRepository subscriptionPersistenceRepository;
     private final InvoicePersistenceRepository invoicePersistenceRepository;
+    private final AuditTrail auditTrail;
 
     public BillingCommandServiceImpl(PlanPersistenceRepository planPersistenceRepository,
                                      SubscriptionPersistenceRepository subscriptionPersistenceRepository,
-                                     InvoicePersistenceRepository invoicePersistenceRepository) {
+                                     InvoicePersistenceRepository invoicePersistenceRepository,
+                                     AuditTrail auditTrail) {
         this.planPersistenceRepository = planPersistenceRepository;
         this.subscriptionPersistenceRepository = subscriptionPersistenceRepository;
         this.invoicePersistenceRepository = invoicePersistenceRepository;
+        this.auditTrail = auditTrail;
     }
 
     @Override
@@ -58,6 +62,8 @@ public class BillingCommandServiceImpl implements BillingCommandService {
         if (plan.get().getPriceMonthly() > 0) {
             recordInvoice(command.storeId(), plan.get(), now.toString());
         }
+        auditTrail.record("CHANGE_PLAN", "Store %s switched to plan %s".formatted(command.storeId(), plan.get().getName()),
+                command.storeId());
 
         return Optional.of(SubscriptionPersistenceAssembler.toDomainFromPersistence(saved));
     }

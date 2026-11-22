@@ -52,6 +52,10 @@ public class UserCommandServiceImpl implements UserCommandService {
     private static final String USER_SIGNED_OUT_ACTION = "USER_SIGNED_OUT";
     private static final String REFRESH_TOKEN_DIGEST = "SHA-256";
     private static final String PASSWORD_RESET_ACTION = "PASSWORD_RESET";
+    private static final String VERIFY_EMAIL_ACTION = "VERIFY_EMAIL";
+    private static final String UPDATE_PROFILE_ACTION = "UPDATE_PROFILE";
+    private static final String CHANGE_EMAIL_ACTION = "CHANGE_EMAIL";
+    private static final String CHANGE_PASSWORD_ACTION = "CHANGE_PASSWORD";
 
     private final UserRepository userRepository;
     private final HashingService hashingService;
@@ -194,7 +198,9 @@ public class UserCommandServiceImpl implements UserCommandService {
         if (user.isEmpty() || !user.get().confirmEmail(command.token().trim())) {
             return Result.failure(ApplicationError.validationError("token", "error.detail.invalid-token"));
         }
-        return Result.success(userRepository.save(user.get()));
+        var verified = userRepository.save(user.get());
+        recordAction(verified, VERIFY_EMAIL_ACTION, "Email %s verified".formatted(verified.getEmail()));
+        return Result.success(verified);
     }
 
     @Override
@@ -276,7 +282,9 @@ public class UserCommandServiceImpl implements UserCommandService {
             return Result.failure(ApplicationError.notFound("User", command.email()));
         }
         user.get().updateProfile(command.name(), command.phone());
-        return Result.success(userRepository.save(user.get()));
+        var updated = userRepository.save(user.get());
+        recordAction(updated, UPDATE_PROFILE_ACTION, "Profile of %s updated".formatted(updated.getEmail()));
+        return Result.success(updated);
     }
 
     @Override
@@ -296,6 +304,7 @@ public class UserCommandServiceImpl implements UserCommandService {
         }
         user.get().changeEmail(newEmail, verificationToken);
         var saved = userRepository.save(user.get());
+        recordAction(saved, CHANGE_EMAIL_ACTION, "Account email changed to %s".formatted(newEmail));
         return Result.success(issueSession(saved));
     }
 
@@ -309,7 +318,9 @@ public class UserCommandServiceImpl implements UserCommandService {
             return Result.failure(ApplicationError.validationError("currentPassword", "error.detail.wrong-password"));
         }
         user.get().setPassword(hashingService.encode(command.newPassword()));
-        return Result.success(userRepository.save(user.get()));
+        var changed = userRepository.save(user.get());
+        recordAction(changed, CHANGE_PASSWORD_ACTION, "Password of %s changed".formatted(changed.getEmail()));
+        return Result.success(changed);
     }
 
     private Roles resolveRoleName(String requestedRole) {
