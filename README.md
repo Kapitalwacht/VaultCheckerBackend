@@ -1,13 +1,13 @@
-# VaultChecker Platform — Backend
+# VaultChecker Platform Backend
 
-RESTful API for **VaultChecker**, a multi-store platform that digitalises the neighbourhood
-paper store credit ledger. Small businesses — corner shops, butchers, bakeries,
-hairdressers — extend credit to their neighbours; VaultChecker replaces the paper notebook with a
-proper running-account system, including the **financial engine** that computes interest, instalments
+RESTful API for VaultChecker, a multi-store platform that digitalises the neighbourhood
+paper store credit ledger. Small businesses such as corner shops, butchers, bakeries and
+hairdressers extend credit to their neighbours; VaultChecker replaces the paper notebook with a
+proper running-account system, including the financial engine that computes interest, instalments
 and late fees.
 
-Built with **Java 26**, **Spring Boot 4** and **PostgreSQL**, following **Domain-Driven Design (DDD)**
-with a **hexagonal / ports-and-adapters** layout and a lightweight **CQRS** style (commands vs queries).
+Built with Java 26, Spring Boot 4 and PostgreSQL, following Domain-Driven Design (DDD)
+with a hexagonal / ports-and-adapters layout and a lightweight CQRS style (commands vs queries).
 
 ## Tech stack
 
@@ -20,17 +20,17 @@ with a **hexagonal / ports-and-adapters** layout and a lightweight **CQRS** styl
 | Email            | EmailJS REST API (verification link, password recovery code)  |
 | Payments         | Stripe test-mode Payment Links                                |
 | Docs             | SpringDoc OpenAPI / Swagger UI                                |
-| Build            | Maven (wrapper included) — `./mvnw`                          |
+| Build            | Maven with the included wrapper (`./mvnw`)                    |
 
 ## Architecture
 
-The code is split into **bounded contexts** (one folder per business capability). Every context is
-organised into the same four layers, and dependencies only ever point **inwards** (interfaces →
+The code is split into bounded contexts (one folder per business capability). Every context is
+organised into the same four layers, and dependencies only ever point inwards (interfaces →
 application → domain; infrastructure implements domain ports):
 
 ```
 <context>/
-├── domain/           # Pure business model — no framework code
+├── domain/           # Pure business model, no framework code
 │   ├── model/
 │   │   ├── aggregates/     # Aggregate roots (Store, Customer, CreditAccount, …)
 │   │   ├── entities/       # Entities owned by an aggregate (Role)
@@ -55,9 +55,9 @@ application → domain; infrastructure implements domain ports):
 
 ### Why the domain never touches JPA
 
-The domain model (e.g. `Store`) is a plain Java object. Persistence uses a **separate**
-`StorePersistenceEntity` annotated with JPA. A **persistence assembler** converts between the two, and
-a **repository adapter** implements the domain's `StoreRepository` port using Spring Data. This keeps
+The domain model (e.g. `Store`) is a plain Java object. Persistence uses a separate
+`StorePersistenceEntity` annotated with JPA. A persistence assembler converts between the two, and
+a repository adapter implements the domain's `StoreRepository` port using Spring Data. This keeps
 business rules independent of the database and makes the domain trivial to unit-test.
 
 ### How a request flows (write path)
@@ -74,7 +74,7 @@ POST /api/v1/stores
   ← ResponseEntityAssembler               turns the Result into a 2xx body or the right error status
 ```
 
-Every use case returns a **`Result<T, ApplicationError>`** (a sealed type in `shared`) instead of
+Every use case returns a `Result<T, ApplicationError>` (a sealed type in `shared`) instead of
 throwing for expected failures. `ResponseEntityAssembler` maps success to the given HTTP status and
 `ApplicationError` to the correct code (`VALIDATION_ERROR` → 400, `FORBIDDEN` → 403, `*_NOT_FOUND` → 404,
 `*_CONFLICT` → 409, `BUSINESS_RULE_VIOLATION` → 422, `SERVICE_UNAVAILABLE` → 503). Messages and error
@@ -88,20 +88,20 @@ details are localised (en/es) from the request's `Accept-Language` header.
 | `stores`        | Store registration / logical deactivation, tenant isolation       | `/stores` |
 | `catalog`       | Products & services (cash/list price, payment mode, brand, image) | `/products` |
 | `customers`     | Customers and their agreed credit terms (rate, currency, dates)   | `/customers` |
-| `credit`        | Credit accounts, statements, purchases, payments + the **financial engine** | `/credit-accounts`, `/purchases`, `/payments`, `/installment-payments` |
+| `credit`        | Credit accounts, statements, purchases, payments + the financial engine | `/credit-accounts`, `/purchases`, `/payments`, `/installment-payments` |
 | `subscriptions` | Store plans (`corner`, `business`, `chain`), subscriptions and invoices | `/plans`, `/subscriptions`, `/invoices` |
 | `audit`         | Log of every operation that changes data                         | `/audit-logs` |
-| `shared`        | Base aggregate, `Result`/`ApplicationError`, global error handling, JPA/OpenAPI/i18n config | — |
+| `shared`        | Base aggregate, `Result`/`ApplicationError`, global error handling, JPA/OpenAPI/i18n config | N/A |
 
-All paths are under `/api/v1`. Interactive docs: **`/swagger-ui.html`**.
+All paths are under `/api/v1`. Interactive docs: `/swagger-ui.html`.
 
 ### Roles & multi-tenancy
 
 Three roles model the three personas in the brief:
 
-- `ROLE_SYSTEM_ADMIN` — platform admin; registers and deactivates stores. Only one can exist.
-- `ROLE_STORE_ADMIN` — business owner; manages products, customers, credit and the store's plan.
-- `ROLE_CUSTOMER` — neighbour; consults their own debt and payment plan.
+- `ROLE_SYSTEM_ADMIN`: platform admin; registers and deactivates stores. Only one can exist.
+- `ROLE_STORE_ADMIN`: business owner; manages products, customers, credit and the store's plan.
+- `ROLE_CUSTOMER`: neighbour; consults their own debt and payment plan.
 
 The API accepts and returns the short names `system-admin`, `store-admin` and `customer`. Roles are
 created the first time they are assigned. On startup, the account set in `SYSTEM_ADMIN_EMAIL` becomes
@@ -109,11 +109,11 @@ the system admin once it has signed up.
 
 Every product, customer and credit account carries a `storeId`. `CurrentUserScope` reads the store from
 the token, so lists only return the caller's data and another store's records answer `403` or `404`.
-A customer signs up with the **DNI** registered by the store, which links the user to their debts.
+A customer signs up with the DNI registered by the store, which links the user to their debts.
 
 ### Sessions
 
-`sign-in` returns a **15-minute access token** and a **7-day refresh token**. The refresh token is
+`sign-in` returns a 15-minute access token and a 7-day refresh token. The refresh token is
 stored as a SHA-256 hash and rotates on every `/authentication/refresh`; `/authentication/sign-out`
 revokes it. Sign-in requires a verified email unless `EMAIL_VERIFICATION_REQUIRED=false`.
 
@@ -133,18 +133,18 @@ earlier plan ids is renamed automatically.
 
 ## Financial calculation engine (`credit/domain/services`)
 
-The academic core of the project. All calculators are **pure, dependency-free** classes that honour
-the mandatory conventions in `FinanceConstants` — **360-day year, 30-day commercial month, amounts
-rounded to 2 decimals, rates carried to ≥7 decimals**:
+The academic core of the project. All calculators are pure, dependency-free classes that honour
+the mandatory conventions in `FinanceConstants`: 360-day year, 30-day commercial month, amounts
+rounded to 2 decimals and rates carried to at least 7 decimals. The calculators are:
 
-- **`InterestCalculator`** — converts an agreed rate (nominal ⇄ effective), computes **compensatory
-  interest** for the days between purchase and payment, **moratory (late) interest** for the days of
-  delay, and **capitalises the grace period** before the first instalment.
-- **`FrenchAmortizationCalculator`** — builds the equal-instalment **French method (payments in arrears)** schedule
+- `InterestCalculator` converts an agreed rate (nominal ⇄ effective), computes compensatory
+  interest for the days between purchase and payment, moratory (late) interest for the days of
+  delay, and capitalises the grace period before the first instalment.
+- `FrenchAmortizationCalculator` builds the equal-instalment French method (payments in arrears) schedule
   `A = P · r / (1 − (1 + r)⁻ⁿ)`, using the effective monthly rate and capitalising grace days first.
-- **`PaymentAllocationCalculator`** — applies the payment **order of allocation**: a payment is imputed to
+- `PaymentAllocationCalculator` applies the payment order of allocation: a payment is imputed to
   moratory interest first, then compensatory interest, then principal.
-- **`CreditCycle`** — derives the cutoff, grace end and payment dates of each billing cycle.
+- `CreditCycle` derives the cutoff, grace end and payment dates of each billing cycle.
 
 Each purchase freezes the terms agreed when it was made (`CreditTerms`), so later changes to the
 customer's rate do not alter existing credits. Each credit keeps the customer's currency (PEN or USD).
@@ -152,9 +152,9 @@ Amounts owed are always computed on the server.
 
 Being framework-free, each calculator can be unit-tested directly against the assignment's test cases.
 
-## Configuration — two environments
+## Configuration for two environments
 
-Configuration is externalised into **two env files** (same scheme as the frontend). Each is parsed as
+Configuration is externalised into two env files (same scheme as the frontend). Each is parsed as
 a properties file and auto-loaded by the matching Spring profile via `spring.config.import`:
 
 | File               | Profile          |
@@ -162,7 +162,7 @@ a properties file and auto-loaded by the matching Spring profile via `spring.con
 | `.env.development` | `dev` (default)  |
 | `.env.production`  | `prod`           |
 
-Each file holds just two variables — real environment variables override them, so nothing
+Each file holds just two variables. Real environment variables override them, so nothing
 environment-specific is hardcoded in the source:
 
 ```properties
@@ -184,10 +184,10 @@ EMAILJS_VERIFICATION_TEMPLATE_ID=
 EMAILJS_RECOVERY_TEMPLATE_ID=
 ```
 
-EmailJS only accepts server-side calls when **Account → Security → "Allow EmailJS API for
-non-browser applications"** is enabled. The verification template receives `{{to_email}}`,
+EmailJS only accepts server-side calls when Account → Security → "Allow EmailJS API for
+non-browser applications" is enabled. The verification template receives `{{to_email}}`,
 `{{name}}` and `{{link}}`; the recovery template receives `{{to_email}}`, `{{name}}` and `{{code}}`.
-Both templates must use `{{to_email}}` in their **To Email** field.
+Both templates must use `{{to_email}}` in their To Email field.
 
 Other optional variables (the defaults are in `application.properties`):
 
@@ -208,7 +208,7 @@ redirect is what activates the plan.
 
 ## Running locally
 
-Prerequisites: **JDK 26** and a running **PostgreSQL** with a `vaultchecker` database
+Prerequisites: JDK 26 and a running PostgreSQL with a `vaultchecker` database
 (`docker compose up -d` starts one). Set your values in `.env.development`, then:
 
 ```bash
@@ -253,6 +253,6 @@ docker run -p 8092:8092 --env-file .env.production vaultchecker-backend
 
 ## Deployment
 
-Production runs on **Render** from this `Dockerfile` with the `prod` profile. Every push to `main`
+Production runs on Render from this `Dockerfile` with the `prod` profile. Every push to `main`
 deploys automatically. Set `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_BASE_URL` and the `EMAILJS_*`
-variables in the service's **Environment** tab.
+variables in the service's Environment tab.
