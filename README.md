@@ -1,15 +1,13 @@
 # VaultChecker Platform — Backend
 
 RESTful API for **VaultChecker**, a multi-store platform that digitalises the neighbourhood
-_"cuaderno de fiado"_ (store credit ledger). Small businesses — bodegas, butchers, bakeries,
+paper store credit ledger. Small businesses — corner shops, butchers, bakeries,
 hairdressers — extend credit to their neighbours; VaultChecker replaces the paper notebook with a
 proper running-account system, including the **financial engine** that computes interest, instalments
 and late fees.
 
 Built with **Java 26**, **Spring Boot 4** and **PostgreSQL**, following **Domain-Driven Design (DDD)**
 with a **hexagonal / ports-and-adapters** layout and a lightweight **CQRS** style (commands vs queries).
-
----
 
 ## Tech stack
 
@@ -23,8 +21,6 @@ with a **hexagonal / ports-and-adapters** layout and a lightweight **CQRS** styl
 | Payments         | Stripe test-mode Payment Links                                |
 | Docs             | SpringDoc OpenAPI / Swagger UI                                |
 | Build            | Maven (wrapper included) — `./mvnw`                          |
-
----
 
 ## Architecture
 
@@ -91,10 +87,10 @@ details are localised (en/es) from the request's `Accept-Language` header.
 | `iam`           | Sign-up/sign-in, sessions, email verification, password recovery, users and roles | `/authentication`, `/users`, `/roles` |
 | `stores`        | Store registration / logical deactivation, tenant isolation       | `/stores` |
 | `catalog`       | Products & services (cash/list price, payment mode, brand, image) | `/products` |
-| `customers`     | Customers and their pactada credit terms (rate, currency, dates)  | `/customers` |
+| `customers`     | Customers and their agreed credit terms (rate, currency, dates)   | `/customers` |
 | `credit`        | Credit accounts, statements, purchases, payments + the **financial engine** | `/credit-accounts`, `/purchases`, `/payments`, `/installment-payments` |
-| `subscriptions` | Store plans, subscriptions and invoices                           | `/plans`, `/subscriptions`, `/invoices` |
-| `audit`         | Operation traceability, event-driven                              | `/audit-logs` |
+| `subscriptions` | Store plans (`corner`, `business`, `chain`), subscriptions and invoices | `/plans`, `/subscriptions`, `/invoices` |
+| `audit`         | Log of every operation that changes data                         | `/audit-logs` |
 | `shared`        | Base aggregate, `Result`/`ApplicationError`, global error handling, JPA/OpenAPI/i18n config | — |
 
 All paths are under `/api/v1`. Interactive docs: **`/swagger-ui.html`**.
@@ -108,7 +104,8 @@ Three roles model the three personas in the brief:
 - `ROLE_CUSTOMER` — neighbour; consults their own debt and payment plan.
 
 The API accepts and returns the short names `system-admin`, `store-admin` and `customer`. Roles are
-created on demand the first time they are assigned (no startup seeding).
+created the first time they are assigned. On startup, the account set in `SYSTEM_ADMIN_EMAIL` becomes
+the system admin once it has signed up.
 
 Every product, customer and credit account carries a `storeId`. `CurrentUserScope` reads the store from
 the token, so lists only return the caller's data and another store's records answer `403` or `404`.
@@ -120,7 +117,19 @@ A customer signs up with the **DNI** registered by the store, which links the us
 stored as a SHA-256 hash and rotates on every `/authentication/refresh`; `/authentication/sign-out`
 revokes it. Sign-in requires a verified email unless `EMAIL_VERIFICATION_REQUIRED=false`.
 
----
+### Audit trail
+
+Every command service records its operation through `AuditTrail` (`shared/application/audit`) right
+after saving it. The `audit` context stores each entry in `audit_logs` with the role, action, date,
+time, details and store. Sign-up, sign-in and sign-out, profile and password changes, stores,
+customers, products, credit accounts, purchases, instalment payments, payments and plan changes are all
+recorded. Reads such as lists and reports are not. Clients only read the log through `GET /audit-logs`.
+
+### Data created on startup
+
+The app creates or updates the three plans: `corner` (free, the default for new stores), `business`
+and `chain`. Clients translate the plan names from these ids. Existing data that still uses the
+earlier plan ids is renamed automatically.
 
 ## Financial calculation engine (`credit/domain/services`)
 
@@ -128,12 +137,12 @@ The academic core of the project. All calculators are **pure, dependency-free** 
 the mandatory conventions in `FinanceConstants` — **360-day year, 30-day commercial month, amounts
 rounded to 2 decimals, rates carried to ≥7 decimals**:
 
-- **`InterestCalculator`** — converts a pactada rate (nominal ⇄ effective), computes **compensatory
+- **`InterestCalculator`** — converts an agreed rate (nominal ⇄ effective), computes **compensatory
   interest** for the days between purchase and payment, **moratory (late) interest** for the days of
   delay, and **capitalises the grace period** before the first instalment.
-- **`FrenchAmortizationCalculator`** — builds the equal-instalment **French method (vencido)** schedule
+- **`FrenchAmortizationCalculator`** — builds the equal-instalment **French method (payments in arrears)** schedule
   `A = P · r / (1 − (1 + r)⁻ⁿ)`, using the effective monthly rate and capitalising grace days first.
-- **`PaymentAllocationCalculator`** — applies the payment **prelación**: a payment is imputed to
+- **`PaymentAllocationCalculator`** — applies the payment **order of allocation**: a payment is imputed to
   moratory interest first, then compensatory interest, then principal.
 - **`CreditCycle`** — derives the cutoff, grace end and payment dates of each billing cycle.
 
@@ -142,8 +151,6 @@ customer's rate do not alter existing credits. Each credit keeps the customer's 
 Amounts owed are always computed on the server.
 
 Being framework-free, each calculator can be unit-tested directly against the assignment's test cases.
-
----
 
 ## Configuration — two environments
 
@@ -194,11 +201,10 @@ Other optional variables (the defaults are in `application.properties`):
 | `GOOGLE_CLIENT_ID`            | Project client   | Audience accepted for Google sign-in    |
 | `STRIPE_PAYMENT_LINK_BUSINESS` | Test link       | Payment Link of the Business plan       |
 | `STRIPE_PAYMENT_LINK_CHAIN`   | Test link        | Payment Link of the Chain plan          |
+| `SYSTEM_ADMIN_EMAIL`          | `kapitalwatch@gmail.com` | Account promoted to system admin on startup |
 
 Each Stripe Payment Link must redirect to `<frontend>/billing?checkout=success` after payment. That
 redirect is what activates the plan.
-
----
 
 ## Running locally
 
@@ -228,11 +234,11 @@ With `EMAIL_VERIFICATION_REQUIRED=false`, as in the `h2` command above:
 # Register a store admin with their store, then sign in to get a JWT
 curl -X POST http://localhost:8092/api/v1/authentication/sign-up \
   -H "Content-Type: application/json" \
-  -d '{"email":"owner@bodega.pe","password":"12345678","name":"Owner","role":"store-admin","storeId":"ST-001","businessName":"Bodega Don Pepe"}'
+  -d '{"email":"owner@shop.pe","password":"12345678","name":"Owner","role":"store-admin","storeId":"ST-001","businessName":"Corner Shop"}'
 
 curl -X POST http://localhost:8092/api/v1/authentication/sign-in \
   -H "Content-Type: application/json" \
-  -d '{"email":"owner@bodega.pe","password":"12345678"}'
+  -d '{"email":"owner@shop.pe","password":"12345678"}'
 # → { "id":1, "email":"...", "role":"store-admin", "storeId":"ST-001", "token":"eyJ...", "refreshToken":"..." }
 ```
 
