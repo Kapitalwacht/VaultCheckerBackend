@@ -234,11 +234,11 @@ With `EMAIL_VERIFICATION_REQUIRED=false`, as in the `h2` command above:
 # Register a store admin with their store, then sign in to get a JWT
 curl -X POST http://localhost:8092/api/v1/authentication/sign-up \
   -H "Content-Type: application/json" \
-  -d '{"email":"owner@shop.pe","password":"12345678","name":"Owner","role":"store-admin","storeId":"ST-001","businessName":"Corner Shop"}'
+  -d '{"email":"owner@shop.com","password":"12345678","name":"Owner","role":"store-admin","storeId":"ST-001","businessName":"Corner Shop"}'
 
 curl -X POST http://localhost:8092/api/v1/authentication/sign-in \
   -H "Content-Type: application/json" \
-  -d '{"email":"owner@shop.pe","password":"12345678"}'
+  -d '{"email":"owner@shop.com","password":"12345678"}'
 # → { "id":1, "email":"...", "role":"store-admin", "storeId":"ST-001", "token":"eyJ...", "refreshToken":"..." }
 ```
 
